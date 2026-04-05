@@ -239,7 +239,7 @@ function GLBModel({
     allGroups.current.forEach((g) => {
       const orig   = groupOriginalY.current.get(g) ?? 0;
       const target = g === hoveredGroupRef.current ? orig + 0.25 : orig;
-      g.position.y += (target - g.position.y) * 0.06;
+      g.position.y += (target - g.position.y) * 0.03;
     });
   });
 
@@ -317,8 +317,8 @@ function CameraRig() {
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
   useFrame(() => {
-    camera.position.x += (mouse.current.x * 8 - camera.position.x) * 0.08;
-    camera.position.y += (mouse.current.y * 4.5 + 8 - camera.position.y) * 0.08;
+    camera.position.x += (mouse.current.x * 2.5 - camera.position.x) * 0.03;
+    camera.position.y += (mouse.current.y * 1.5 + 8 - camera.position.y) * 0.03;
     camera.lookAt(0, 0, 0);
   });
   return null;
