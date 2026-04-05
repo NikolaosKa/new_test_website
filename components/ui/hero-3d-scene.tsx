@@ -92,9 +92,11 @@ function GLBModel({
   const allGroups       = useRef<THREE.Object3D[]>([]);
   const statsMap        = useRef(new Map<THREE.Object3D, BuildingStats>());
 
-  const hoveredGroupRef = useRef<THREE.Object3D | null>(null);
-  const defaultMatRef   = useRef<THREE.MeshStandardMaterial | null>(null);
-  const hoveredMatRef   = useRef<THREE.MeshStandardMaterial | null>(null);
+  const hoveredGroupRef  = useRef<THREE.Object3D | null>(null);
+  const defaultMatRef    = useRef<THREE.MeshStandardMaterial | null>(null);
+  const hoveredMatRef    = useRef<THREE.MeshStandardMaterial | null>(null);
+  // group → timestamp when it should begin descending (Date.now() + delay ms)
+  const elevatedGroups   = useRef(new Map<THREE.Object3D, number>());
 
   // Share camera with parent RAF loop
   useEffect(() => { shared.current.camera = camera; }, [camera, shared]);
@@ -204,7 +206,7 @@ function GLBModel({
     return () => gl.domElement.removeEventListener("mousemove", onMove);
   }, [gl, shared]);
 
-  // ── Per-frame: raycast + elevation ────────────────────────────────────────
+  // ── Per-frame: raycast + trigger elevation ───────────────────────────────
   useFrame(() => {
     const meshes = buildingMeshes.current;
     if (!meshes.length) return;
@@ -218,22 +220,19 @@ function GLBModel({
       const hitGroup = hitMesh ? (meshToGroup.current.get(hitMesh) ?? hitMesh) : null;
 
       if (hitGroup !== hoveredGroupRef.current) {
-        // Restore previous
-        if (hoveredGroupRef.current && defaultMatRef.current) {
-          (groupMeshes.current.get(hoveredGroupRef.current) ?? [])
-            .forEach((m) => { m.material = defaultMatRef.current!; });
-        }
+        hoveredGroupRef.current = hitGroup;
+        shared.current.group    = hitGroup;
 
-        hoveredGroupRef.current  = hitGroup;
-        shared.current.group     = hitGroup;
-
-        if (hitGroup && hoveredMatRef.current) {
-          (groupMeshes.current.get(hitGroup) ?? [])
-            .forEach((m) => { m.material = hoveredMatRef.current!; });
-
-          if (!statsMap.current.has(hitGroup)) {
-            statsMap.current.set(hitGroup, randomStats());
+        if (hitGroup) {
+          // Trigger elevation only if this block is not already elevated
+          if (!elevatedGroups.current.has(hitGroup)) {
+            elevatedGroups.current.set(hitGroup, Date.now() + 3000); // hold 3 s
+            if (hoveredMatRef.current) {
+              (groupMeshes.current.get(hitGroup) ?? [])
+                .forEach((m) => { m.material = hoveredMatRef.current!; });
+            }
           }
+          if (!statsMap.current.has(hitGroup)) statsMap.current.set(hitGroup, randomStats());
           onHoverChange(statsMap.current.get(hitGroup)!);
         } else {
           onHoverChange(null);
@@ -241,11 +240,25 @@ function GLBModel({
       }
     }
 
-    // Animate elevation per group
+    // Animate all groups — hold elevated until timer expires, then descend
+    const now = Date.now();
     allGroups.current.forEach((g) => {
-      const orig   = groupOriginalY.current.get(g) ?? 0;
-      const target = g === hoveredGroupRef.current ? orig + 0.25 : orig;
+      const orig      = groupOriginalY.current.get(g) ?? 0;
+      const returnAt  = elevatedGroups.current.get(g);
+      const elevated  = returnAt !== undefined && now < returnAt;
+      const target    = elevated ? orig + 0.25 : orig;
+
       g.position.y += (target - g.position.y) * 0.03;
+
+      // Once fully descended, restore material and clear the entry
+      if (!elevated && returnAt !== undefined && Math.abs(g.position.y - orig) < 0.005) {
+        g.position.y = orig;
+        elevatedGroups.current.delete(g);
+        if (defaultMatRef.current) {
+          (groupMeshes.current.get(g) ?? [])
+            .forEach((m) => { m.material = defaultMatRef.current!; });
+        }
+      }
     });
   });
 
