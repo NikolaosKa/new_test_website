@@ -229,7 +229,7 @@ function GLBModel({
         if (hitGroup) {
           // Trigger elevation only if this block is not already elevated
           if (!elevatedGroups.current.has(hitGroup)) {
-            elevatedGroups.current.set(hitGroup, Date.now() + 1800); // hold 1.8 s
+            elevatedGroups.current.set(hitGroup, Date.now() + 500); // hold 1.8 s
             if (hoveredMatRef.current) {
               (groupMeshes.current.get(hitGroup) ?? [])
                 .forEach((m) => { m.material = hoveredMatRef.current!; });
@@ -250,10 +250,10 @@ function GLBModel({
       const returnAt  = elevatedGroups.current.get(g);
       const elevated  = returnAt !== undefined && now < returnAt;
       // 0.15 world units of lift, converted to scene-local space
-      const liftLocal = 0.35 / scaleFactorRef.current;
+      const liftLocal = 0.8 / scaleFactorRef.current;
       const target    = elevated ? orig + liftLocal : orig;
 
-      g.position.y += (target - g.position.y) * 0.03;
+      g.position.y += (target - g.position.y) * 0.08;
 
       // Once fully descended, restore material and clear the entry
       if (!elevated && returnAt !== undefined && Math.abs(g.position.y - orig) < 0.005) {
