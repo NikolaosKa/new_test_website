@@ -1,0 +1,12 @@
+import puppeteer from "puppeteer";
+const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+const page = await browser.newPage();
+await page.setViewport({ width: 1440, height: 900 });
+const logs = [];
+page.on("console", msg => { if (msg.text().includes("[Hero3D]")) logs.push(msg.text()); });
+await page.goto("http://localhost:3000", { waitUntil: "domcontentloaded", timeout: 30000 });
+await new Promise(r => setTimeout(r, 9000));
+console.log("=== [Hero3D] LOGS ===");
+logs.forEach(l => console.log(l));
+if (!logs.length) console.log("(no Hero3D logs captured)");
+await browser.close();
