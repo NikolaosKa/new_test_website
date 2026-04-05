@@ -97,6 +97,8 @@ function GLBModel({
   const hoveredMatRef    = useRef<THREE.MeshStandardMaterial | null>(null);
   // group → timestamp when it should begin descending (Date.now() + delay ms)
   const elevatedGroups   = useRef(new Map<THREE.Object3D, number>());
+  // scene scale factor stored so useFrame can convert world units → local units
+  const scaleFactorRef   = useRef(1);
 
   // Share camera with parent RAF loop
   useEffect(() => { shared.current.camera = camera; }, [camera, shared]);
@@ -115,6 +117,7 @@ function GLBModel({
     const safeDim = (maxDim > 0 && isFinite(maxDim)) ? maxDim : 0.225;
     const scaleFactor = 10 / safeDim;
     scene.scale.setScalar(scaleFactor);
+    scaleFactorRef.current = scaleFactor;
 
     // 2. Re-measure AFTER scaling, then center at world origin
     const scaledBox = new THREE.Box3().setFromObject(scene);
@@ -226,7 +229,7 @@ function GLBModel({
         if (hitGroup) {
           // Trigger elevation only if this block is not already elevated
           if (!elevatedGroups.current.has(hitGroup)) {
-            elevatedGroups.current.set(hitGroup, Date.now() + 3000); // hold 3 s
+            elevatedGroups.current.set(hitGroup, Date.now() + 1800); // hold 1.8 s
             if (hoveredMatRef.current) {
               (groupMeshes.current.get(hitGroup) ?? [])
                 .forEach((m) => { m.material = hoveredMatRef.current!; });
@@ -246,7 +249,9 @@ function GLBModel({
       const orig      = groupOriginalY.current.get(g) ?? 0;
       const returnAt  = elevatedGroups.current.get(g);
       const elevated  = returnAt !== undefined && now < returnAt;
-      const target    = elevated ? orig + 0.25 : orig;
+      // 0.15 world units of lift, converted to scene-local space
+      const liftLocal = 0.15 / scaleFactorRef.current;
+      const target    = elevated ? orig + liftLocal : orig;
 
       g.position.y += (target - g.position.y) * 0.03;
 
