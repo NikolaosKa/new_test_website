@@ -250,7 +250,7 @@ function GLBModel({
       const returnAt  = elevatedGroups.current.get(g);
       const elevated  = returnAt !== undefined && now < returnAt;
       // 0.15 world units of lift, converted to scene-local space
-      const liftLocal = 0.15 / scaleFactorRef.current;
+      const liftLocal = 0.35 / scaleFactorRef.current;
       const target    = elevated ? orig + liftLocal : orig;
 
       g.position.y += (target - g.position.y) * 0.03;
