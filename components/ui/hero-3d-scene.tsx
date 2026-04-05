@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState, Component, ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useGLTF, Center } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
 const MODEL_PATH = "/hero_model_raw.glb";
@@ -103,7 +103,7 @@ function GLBModel({
   useEffect(() => {
     if (!scene) return;
 
-    // Scale to 10 units — <Center> handles positioning
+    // 1. Reset, measure at original scale
     scene.scale.set(1, 1, 1);
     scene.position.set(0, 0, 0);
 
@@ -114,8 +114,14 @@ function GLBModel({
     const scaleFactor = 10 / safeDim;
     scene.scale.setScalar(scaleFactor);
 
+    // 2. Re-measure AFTER scaling, then center at world origin
+    const scaledBox = new THREE.Box3().setFromObject(scene);
+    const center = new THREE.Vector3();
+    scaledBox.getCenter(center);
+    scene.position.set(-center.x, -center.y, -center.z);
+
     console.log("[Hero3D] size:", sz.x.toFixed(3), sz.y.toFixed(3), sz.z.toFixed(3),
-      "| scale:", scaleFactor.toFixed(1));
+      "| scale:", scaleFactor.toFixed(1), "| center offset:", center.x.toFixed(2), center.y.toFixed(2));
 
     // Collect unique original materials to distinguish buildings vs roads
     const origMats: THREE.Material[] = [];
@@ -516,13 +522,11 @@ export default function Hero3DScene() {
         {MODEL_PATH ? (
           <ModelErrorBoundary>
             <Suspense fallback={null}>
-              <Center>
-                <GLBModel
-                  path={MODEL_PATH}
-                  shared={shared}
-                  onHoverChange={setHoverStats}
-                />
-              </Center>
+              <GLBModel
+                path={MODEL_PATH}
+                shared={shared}
+                onHoverChange={setHoverStats}
+              />
             </Suspense>
           </ModelErrorBoundary>
         ) : (
