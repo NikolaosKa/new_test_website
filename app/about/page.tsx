@@ -45,32 +45,42 @@ const experience = [
   },
 ];
 
+const droneImages = [
+  "/Drone/01_Images/DJI_0239.webp",
+  "/Drone/01_Images/DJI_0248.webp",
+  "/Drone/01_Images/dji_fly_20230614_211442_3_1686770081335_photo.webp",
+  "/Drone/01_Images/dji_fly_20230626_210950_441_1687805033544_photo.webp",
+];
+
 export default function AboutPage() {
-  const skillsRef = useRef<HTMLDivElement>(null);
-  const [skillsOn, setSkillsOn] = useState(false);
-  const [mounted,  setMounted]  = useState(false);
+  const skillsRef    = useRef<HTMLDivElement>(null);
+  // Two-phase: first enable transitions, then (next frame) set the fill value.
+  // This guarantees the browser sees the transition before the transform changes.
+  const [skillsReady, setSkillsReady] = useState(false); // transition enabled
+  const [skillsFill,  setSkillsFill]  = useState(false); // transform applied
+  const [mounted,     setMounted]     = useState(false);
 
   useEffect(() => {
     setMounted(true);
 
-    // Delay observer setup so the bars don't animate before user scrolls
-    const timer = setTimeout(() => {
-      const obs = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setSkillsOn(true);
-            obs.disconnect();
-          }
-        },
-        {
-          threshold: 0.25,
-          rootMargin: "0px 0px -80px 0px", // must be 80px inside viewport
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        // Only fire when scrolling INTO view from below (not on initial load)
+        if (entry.isIntersecting && entry.boundingClientRect.top > 0) {
+          obs.disconnect();
+          // Phase 1: enable transition (no visual change yet — bars still at 0)
+          setSkillsReady(true);
+          // Phase 2: one rAF later, change the transform → animation plays
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => setSkillsFill(true));
+          });
         }
-      );
-      if (skillsRef.current) obs.observe(skillsRef.current);
-    }, 400);
+      },
+      { threshold: 0.2, rootMargin: "0px 0px -60px 0px" }
+    );
 
-    return () => clearTimeout(timer);
+    if (skillsRef.current) obs.observe(skillsRef.current);
+    return () => obs.disconnect();
   }, []);
 
   return (
@@ -302,8 +312,8 @@ export default function AboutPage() {
                   <div
                     className="skill-bar-fill"
                     style={{
-                      transform: skillsOn ? `scaleX(${level / 100})` : "scaleX(0)",
-                      transition: skillsOn
+                      transform: skillsFill ? `scaleX(${level / 100})` : "scaleX(0)",
+                      transition: skillsReady
                         ? `transform 1.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.1}s`
                         : "none",
                     }}
@@ -379,31 +389,55 @@ export default function AboutPage() {
           }}>
             OTHER<br />PURSUITS
           </h2>
-          {[
-            { label: "PHOTOGRAPHY",       tag: "ANALOG / DIGITAL"   },
-            { label: "DRONE VIDEOGRAPHY", tag: "AERIAL / CINEMATIC" },
-          ].map(({ label, tag }) => (
-            <div key={label} style={{ marginBottom: "4.5rem" }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: "1.2rem", marginBottom: "1.5rem" }}>
-                <span style={{ fontFamily: "Syncopate,sans-serif", fontSize: "0.75rem", fontWeight: 700, color: "var(--silver)", letterSpacing: "0.06em" }}>{label}</span>
-                <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.58rem", letterSpacing: "0.14em", color: "rgba(224,224,224,0.28)" }}>{tag}</span>
-              </div>
-              <div className="pursuits-grid">
-                {[1, 2, 3].map((n) => (
-                  <div key={n} style={{
-                    aspectRatio: "4/3", background: "#0d0d0d",
-                    border: "1px solid rgba(224,224,224,0.07)",
-                    overflow: "hidden", position: "relative",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="https://placehold.co/600x450/0d0d0d/1a1a1a" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.3 }} />
-                    <span style={{ position: "absolute", fontFamily: "Share Tech Mono,monospace", fontSize: "0.55rem", letterSpacing: "0.18em", color: "rgba(224,224,224,0.18)" }}>COMING SOON</span>
-                  </div>
-                ))}
-              </div>
+          {/* Photography — placeholders */}
+          <div style={{ marginBottom: "4.5rem" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "1.2rem", marginBottom: "1.5rem" }}>
+              <span style={{ fontFamily: "Syncopate,sans-serif", fontSize: "0.75rem", fontWeight: 700, color: "var(--silver)", letterSpacing: "0.06em" }}>PHOTOGRAPHY</span>
+              <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.58rem", letterSpacing: "0.14em", color: "rgba(224,224,224,0.28)" }}>ANALOG / DIGITAL</span>
             </div>
-          ))}
+            <div className="pursuits-grid">
+              {[1, 2, 3].map((n) => (
+                <div key={n} style={{
+                  aspectRatio: "4/3", background: "#0d0d0d",
+                  border: "1px solid rgba(224,224,224,0.07)",
+                  overflow: "hidden", position: "relative",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="https://placehold.co/600x450/0d0d0d/1a1a1a" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.3 }} />
+                  <span style={{ position: "absolute", fontFamily: "Share Tech Mono,monospace", fontSize: "0.55rem", letterSpacing: "0.18em", color: "rgba(224,224,224,0.18)" }}>COMING SOON</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Drone — real images */}
+          <div style={{ marginBottom: "4.5rem" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "1.2rem", marginBottom: "1.5rem" }}>
+              <span style={{ fontFamily: "Syncopate,sans-serif", fontSize: "0.75rem", fontWeight: 700, color: "var(--silver)", letterSpacing: "0.06em" }}>DRONE VIDEOGRAPHY</span>
+              <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.58rem", letterSpacing: "0.14em", color: "rgba(224,224,224,0.28)" }}>AERIAL / CINEMATIC</span>
+            </div>
+            <div className="pursuits-grid">
+              {droneImages.map((src, i) => (
+                <div key={i} style={{
+                  aspectRatio: "4/3", background: "#0d0d0d",
+                  border: "1px solid rgba(224,224,224,0.07)",
+                  overflow: "hidden",
+                }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={src}
+                    alt={`Drone shot ${i + 1}`}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block",
+                      transition: "transform 0.6s cubic-bezier(0.16,1,0.3,1)",
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
+                    onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
 
         {/* ── Instagram placeholder ─────────────────────────────────────────── */}
