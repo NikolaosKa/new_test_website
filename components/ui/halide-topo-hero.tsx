@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 // Load Three.js scene client-side only (no SSR)
@@ -66,27 +67,46 @@ export const HalideTopoHero = () => {
 
         {/* Links */}
         <div style={{ display: "flex", gap: "clamp(1rem, 2.5vw, 2.5rem)", alignItems: "center" }}>
-          {["WORK", "ABOUT", "CONTACT"].map((link) => (
-            <a
-              key={link}
-              href="#"
-              style={{
-                fontFamily: "Syncopate, sans-serif",
-                fontSize: "0.58rem",
-                letterSpacing: "0.12em",
-                color: "rgba(224,224,224,0.65)",
-                textDecoration: "none",
-                transition: "color 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                (e.target as HTMLAnchorElement).style.color = "var(--accent)";
-              }}
-              onMouseLeave={(e) => {
-                (e.target as HTMLAnchorElement).style.color = "rgba(224,224,224,0.65)";
-              }}
-            >
-              {link}
-            </a>
+          {[
+            { label: "WORK",    href: "#projects" },
+            { label: "ABOUT",   href: "/about"    },
+            { label: "CONTACT", href: "#contact"  },
+          ].map(({ label, href }) => (
+            label === "ABOUT" ? (
+              <Link
+                key={label}
+                href={href}
+                style={{
+                  fontFamily: "Syncopate, sans-serif",
+                  fontSize: "0.58rem",
+                  letterSpacing: "0.12em",
+                  color: "rgba(224,224,224,0.65)",
+                  textDecoration: "none",
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--accent)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(224,224,224,0.65)"; }}
+              >
+                {label}
+              </Link>
+            ) : (
+              <a
+                key={label}
+                href={href}
+                style={{
+                  fontFamily: "Syncopate, sans-serif",
+                  fontSize: "0.58rem",
+                  letterSpacing: "0.12em",
+                  color: "rgba(224,224,224,0.65)",
+                  textDecoration: "none",
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => { (e.target as HTMLAnchorElement).style.color = "var(--accent)"; }}
+                onMouseLeave={(e) => { (e.target as HTMLAnchorElement).style.color = "rgba(224,224,224,0.65)"; }}
+              >
+                {label}
+              </a>
+            )
           ))}
           <a href="#" className="book-btn">
             BOOK APPOINTMENT
