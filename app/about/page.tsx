@@ -4,29 +4,73 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 const skills = [
-  { name: "RHINOCEROS 3D",         level: 95 },
-  { name: "GRASSHOPPER",           level: 88 },
-  { name: "AUTOCAD",               level: 90 },
-  { name: "REVIT",                 level: 72 },
-  { name: "ADOBE CREATIVE SUITE",  level: 82 },
-  { name: "3DS MAX / V-RAY",       level: 68 },
-  { name: "UNREAL ENGINE",         level: 60 },
+  { name: "RHINO + GRASSHOPPER",   level: 92 },
+  { name: "AUTOCAD",               level: 88 },
+  { name: "ARCHICAD",              level: 80 },
+  { name: "SKETCHUP + V-RAY",      level: 78 },
+  { name: "LUMION / TWINMOTION",   level: 75 },
+  { name: "BLENDER",               level: 68 },
+  { name: "ADOBE CREATIVE SUITE",  level: 85 },
+  { name: "PREMIERE PRO",          level: 72 },
+  { name: "PHOTOGRAPHY",           level: 90 },
   { name: "DRONE OPERATION",       level: 85 },
+  { name: "3D PRINTING",           level: 72 },
+  { name: "MODEL MAKING",          level: 88 },
+];
+
+const experience = [
+  {
+    role:    "DESIGNER & PROJECT MANAGER",
+    place:   "Tiny House Company — Kefalonia",
+    period:  "ONGOING",
+    desc:    "Leading design and management of prototype tiny houses. Passive home design focused on efficiency, affordability, and ecological sustainability — with a vision for an agritourism village complex.",
+  },
+  {
+    role:    "ASSISTANT ARCHITECT",
+    place:   "Four-Storey Apartment Building — Neapoli, Athens",
+    period:  "2024",
+    desc:    "Took over and completed an existing project, managing its architectural execution and aesthetics.",
+  },
+  {
+    role:    "ARCHITECT & SITE SUPERVISOR",
+    place:   "Apartment Renovation — Neo Heraklion",
+    period:  "2024",
+    desc:    "Designed and oversaw renovation of a small apartment including new fireplace integration.",
+  },
+  {
+    role:    "SITE SUPERVISOR & DESIGNER",
+    place:   "Two-Storey House Renovation — Chania",
+    period:  "2020",
+    desc:    "Supervised on-site construction and delivered comprehensive 3D designs for a 120 m² renovation.",
+  },
 ];
 
 export default function AboutPage() {
-  const skillsRef  = useRef<HTMLDivElement>(null);
+  const skillsRef = useRef<HTMLDivElement>(null);
   const [skillsOn, setSkillsOn] = useState(false);
   const [mounted,  setMounted]  = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) setSkillsOn(true); },
-      { threshold: 0.15 }
-    );
-    if (skillsRef.current) obs.observe(skillsRef.current);
-    return () => obs.disconnect();
+
+    // Delay observer setup so the bars don't animate before user scrolls
+    const timer = setTimeout(() => {
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setSkillsOn(true);
+            obs.disconnect();
+          }
+        },
+        {
+          threshold: 0.25,
+          rootMargin: "0px 0px -80px 0px", // must be 80px inside viewport
+        }
+      );
+      if (skillsRef.current) obs.observe(skillsRef.current);
+    }, 400);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -36,16 +80,15 @@ export default function AboutPage() {
           opacity: 0;
           transition: opacity 0.7s ease;
         }
-        .about-page.ready {
-          opacity: 1;
-        }
+        .about-page.ready { opacity: 1; }
+
         @keyframes breathe {
           0%,100% { transform: scale(1);    opacity: 0.8; }
           50%      { transform: scale(1.04); opacity: 1;   }
         }
         @keyframes flow {
-          0%,100% { transform: scaleY(0); transform-origin: top; }
-          50%      { transform: scaleY(1); transform-origin: top; }
+          0%,100% { transform: scaleY(0); transform-origin: top;    }
+          50%      { transform: scaleY(1); transform-origin: top;    }
           51%      { transform: scaleY(1); transform-origin: bottom; }
         }
         .about-nav-link {
@@ -56,31 +99,46 @@ export default function AboutPage() {
           text-decoration: none;
           transition: color 0.2s;
         }
-        .about-nav-link:hover { color: var(--accent); }
+        .about-nav-link:hover  { color: var(--accent); }
         .about-nav-link.active { color: var(--accent); }
+
         .bio-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 6rem;
           align-items: center;
         }
+        .exp-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 2px;
+        }
         .pursuits-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(3,1fr);
           gap: 1rem;
         }
         .ig-grid {
           display: grid;
-          grid-template-columns: repeat(6, 1fr);
+          grid-template-columns: repeat(6,1fr);
           gap: 4px;
         }
+        .skill-bar-fill {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to right, var(--accent), rgba(255,60,0,0.38));
+          transform-origin: left center;
+          will-change: transform;
+        }
+
         @media (max-width: 900px) {
           .bio-grid { grid-template-columns: 1fr !important; gap: 3rem !important; }
-          .ig-grid  { grid-template-columns: repeat(3, 1fr) !important; }
+          .exp-grid  { grid-template-columns: 1fr !important; }
+          .ig-grid   { grid-template-columns: repeat(3,1fr) !important; }
         }
         @media (max-width: 600px) {
           .pursuits-grid { grid-template-columns: 1fr !important; }
-          .ig-grid       { grid-template-columns: repeat(2, 1fr) !important; }
+          .ig-grid       { grid-template-columns: repeat(2,1fr) !important; }
         }
       `}</style>
 
@@ -89,7 +147,7 @@ export default function AboutPage() {
         style={{ background: "var(--bg)", color: "var(--silver)", minHeight: "100vh" }}
       >
 
-        {/* ── Nav ─────────────────────────────────────────────────────────── */}
+        {/* ── Nav ───────────────────────────────────────────────────────────── */}
         <nav style={{
           position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
           display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -104,49 +162,40 @@ export default function AboutPage() {
             </span>
           </Link>
           <div style={{ display: "flex", gap: "clamp(1rem,2.5vw,2.5rem)", alignItems: "center" }}>
-            <Link href="/"        className="about-nav-link">WORK</Link>
-            <Link href="/about"   className="about-nav-link active">ABOUT</Link>
+            <Link href="/"         className="about-nav-link">WORK</Link>
+            <Link href="/about"    className="about-nav-link active">ABOUT</Link>
             <Link href="/#contact" className="about-nav-link">CONTACT</Link>
-            <a href="#" style={{
+            <a href="mailto:nika-nikolaos@hotmail.com" style={{
               border: "1px solid rgba(224,224,224,0.4)", color: "var(--silver)",
               padding: "0.55rem 1.2rem", textDecoration: "none",
               fontFamily: "Syncopate,sans-serif", fontSize: "0.6rem", letterSpacing: "0.1em",
+              transition: "border-color 0.2s, color 0.2s",
             }}>BOOK APPOINTMENT</a>
           </div>
         </nav>
 
-        {/* ── Logo hero ───────────────────────────────────────────────────── */}
+        {/* ── Logo hero ─────────────────────────────────────────────────────── */}
         <section style={{
           minHeight: "100vh", display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center",
           position: "relative", overflow: "hidden",
         }}>
-          {/* Subtle radial glow */}
           <div style={{
             position: "absolute", inset: 0,
-            background: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(255,60,0,0.04) 0%, transparent 70%)",
+            background: "radial-gradient(ellipse 55% 45% at 50% 50%, rgba(255,60,0,0.05) 0%, transparent 70%)",
             pointerEvents: "none",
           }} />
-
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.png"
-            alt="Nikolaos Kalaitzidis"
-            style={{
-              width: "clamp(100px,16vw,220px)", height: "auto",
-              filter: "invert(1) brightness(2)",
-              animation: "breathe 5s ease-in-out infinite",
-            }}
-          />
+          <img src="/logo.png" alt="Nikolaos Kalaitzidis" style={{
+            width: "clamp(100px,16vw,220px)", height: "auto",
+            filter: "invert(1) brightness(2)",
+            animation: "breathe 5s ease-in-out infinite",
+          }} />
           <p style={{
             fontFamily: "Share Tech Mono,monospace", fontSize: "0.62rem",
             letterSpacing: "0.28em", color: "rgba(224,224,224,0.28)",
-            marginTop: "2.5rem", textTransform: "uppercase",
-          }}>
-            ARCHITECTURAL STUDIO
-          </p>
-
-          {/* Scroll cue */}
+            marginTop: "2.5rem",
+          }}>ARCHITECTURAL STUDIO</p>
           <div style={{
             position: "absolute", bottom: "2.5rem", left: "50%", transform: "translateX(-50%)",
             display: "flex", flexDirection: "column", alignItems: "center", gap: "0.6rem",
@@ -156,34 +205,18 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* ── Bio ─────────────────────────────────────────────────────────── */}
-        <section style={{
-          padding: "clamp(5rem,10vw,10rem) clamp(1.5rem,6vw,6rem)",
-          maxWidth: "1400px", margin: "0 auto",
-        }}>
+        {/* ── Bio ───────────────────────────────────────────────────────────── */}
+        <section style={{ padding: "clamp(5rem,10vw,10rem) clamp(1.5rem,6vw,6rem)", maxWidth: "1400px", margin: "0 auto" }}>
           <div className="bio-grid">
             {/* Photo */}
             <div style={{ position: "relative" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/profile.webp"
-                alt="Nikolaos Kalaitzidis"
-                style={{
-                  width: "100%", maxWidth: "480px", display: "block",
-                  filter: "grayscale(0.1) contrast(1.05)",
-                }}
-              />
-              {/* Accent corner */}
-              <div style={{
-                position: "absolute", bottom: 0, left: 0,
-                width: "40%", height: "3px",
-                background: "var(--accent)",
+              <img src="/profile.webp" alt="Nikolaos Kalaitzidis" style={{
+                width: "100%", maxWidth: "480px", display: "block",
+                filter: "grayscale(0.1) contrast(1.05)",
               }} />
-              <div style={{
-                position: "absolute", bottom: 0, left: 0,
-                width: "3px", height: "30%",
-                background: "var(--accent)",
-              }} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, width: "38%", height: "3px", background: "var(--accent)" }} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, width: "3px", height: "28%", background: "var(--accent)" }} />
             </div>
 
             {/* Text */}
@@ -202,21 +235,35 @@ export default function AboutPage() {
                 fontFamily: "Share Tech Mono,monospace", fontSize: "0.82rem",
                 lineHeight: 1.95, color: "rgba(224,224,224,0.65)", marginBottom: "1.4rem",
               }}>
-                Architect and computational designer working at the intersection of digital fabrication, parametric thinking, and spatial experience. Every project begins as a question — about material, light, and how a building negotiates with its context.
+                Architectural engineer based in Athens, Greece. Friendly, versatile, and motivated — broadening my skills and seeking new opportunities to express creativity is my main drive. I enjoy working as part of a team on projects that push the boundaries of design.
               </p>
               <p style={{
                 fontFamily: "Share Tech Mono,monospace", fontSize: "0.82rem",
                 lineHeight: 1.95, color: "rgba(224,224,224,0.42)",
               }}>
-                My practice spans architecture, urban design, and experimental installations, always guided by precision, curiosity, and a deep respect for the intelligence embedded in site.
+                Graduated from the Technical University of Crete in Architectural Engineering. Extended my studies at TU Wien through Erasmus+, in collaboration with the AIT Advanced Institute of Technology and CIL City Intelligent Lab.
               </p>
 
               {/* Stats */}
               <div style={{ marginTop: "3.5rem", display: "flex", gap: "3.5rem", flexWrap: "wrap" }}>
-                {[["5+", "YEARS EXP."], ["30+", "PROJECTS"], ["GR / EU", "BASED"]].map(([val, label]) => (
+                {[["6+", "YEARS EXP."], ["10+", "PROJECTS"], ["GR / EU", "BASED"]].map(([val, label]) => (
                   <div key={label}>
                     <div style={{ fontFamily: "Syncopate,sans-serif", fontWeight: 700, fontSize: "1.6rem", color: "var(--silver)", letterSpacing: "-0.02em" }}>{val}</div>
                     <div style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.52rem", letterSpacing: "0.2em", color: "rgba(224,224,224,0.3)", marginTop: "0.4rem" }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Contact row */}
+              <div style={{ marginTop: "2.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {[
+                  ["EMAIL",   "nika-nikolaos@hotmail.com"],
+                  ["TEL",     "+30 693 959 8454"],
+                  ["BASED",   "Athens, Greece"],
+                ].map(([label, val]) => (
+                  <div key={label} style={{ display: "flex", gap: "1.2rem" }}>
+                    <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.58rem", letterSpacing: "0.15em", color: "rgba(224,224,224,0.28)", minWidth: "52px" }}>{label}</span>
+                    <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.58rem", color: "rgba(224,224,224,0.55)" }}>{val}</span>
                   </div>
                 ))}
               </div>
@@ -224,7 +271,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* ── Skills ──────────────────────────────────────────────────────── */}
+        {/* ── Skills ────────────────────────────────────────────────────────── */}
         <section
           ref={skillsRef}
           style={{
@@ -251,28 +298,79 @@ export default function AboutPage() {
                   <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.68rem", letterSpacing: "0.15em", color: "var(--silver)" }}>{name}</span>
                   <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.62rem", letterSpacing: "0.1em", color: "rgba(224,224,224,0.3)" }}>{level}%</span>
                 </div>
-                {/* Track */}
                 <div style={{ height: "2px", background: "rgba(224,224,224,0.07)", position: "relative", overflow: "hidden" }}>
-                  <div style={{
-                    position: "absolute", inset: 0,
-                    background: "linear-gradient(to right, var(--accent), rgba(255,60,0,0.35))",
-                    transformOrigin: "left center",
-                    transform: `scaleX(${skillsOn ? level / 100 : 0})`,
-                    transition: `transform 1.4s cubic-bezier(0.16,1,0.3,1) ${i * 0.09}s`,
-                  }} />
+                  <div
+                    className="skill-bar-fill"
+                    style={{
+                      transform: skillsOn ? `scaleX(${level / 100})` : "scaleX(0)",
+                      transition: skillsOn
+                        ? `transform 1.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.1}s`
+                        : "none",
+                    }}
+                  />
                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── Other pursuits ───────────────────────────────────────────────── */}
+        {/* ── Experience ────────────────────────────────────────────────────── */}
         <section style={{
           padding: "clamp(4rem,8vw,8rem) clamp(1.5rem,6vw,6rem)",
           borderTop: "1px solid rgba(224,224,224,0.06)",
         }}>
           <p style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.62rem", letterSpacing: "0.22em", color: "var(--accent)", marginBottom: "1.2rem" }}>
-            003 / BEYOND ARCHITECTURE
+            003 / EXPERIENCE
+          </p>
+          <h2 style={{
+            fontFamily: "Syncopate,sans-serif", fontWeight: 700,
+            fontSize: "clamp(1.5rem,3vw,2.5rem)", letterSpacing: "-0.03em",
+            marginBottom: "4rem", color: "var(--silver)", lineHeight: 0.95,
+          }}>
+            SELECTED<br />WORK
+          </h2>
+
+          <div className="exp-grid">
+            {experience.map(({ role, place, period, desc }) => (
+              <div key={role} style={{
+                padding: "2.2rem", borderTop: "1px solid rgba(224,224,224,0.08)",
+                borderLeft: "1px solid rgba(224,224,224,0.04)",
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.8rem", gap: "1rem" }}>
+                  <span style={{ fontFamily: "Syncopate,sans-serif", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.04em", color: "var(--silver)", lineHeight: 1.4 }}>{role}</span>
+                  <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.58rem", letterSpacing: "0.1em", color: "var(--accent)", whiteSpace: "nowrap" }}>{period}</span>
+                </div>
+                <p style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.62rem", letterSpacing: "0.08em", color: "rgba(224,224,224,0.38)", marginBottom: "1rem" }}>{place}</p>
+                <p style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.72rem", lineHeight: 1.85, color: "rgba(224,224,224,0.5)" }}>{desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Workshops / exhibitions row */}
+          <div style={{ marginTop: "3rem", padding: "2rem", border: "1px solid rgba(224,224,224,0.06)" }}>
+            <p style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.58rem", letterSpacing: "0.2em", color: "rgba(224,224,224,0.28)", marginBottom: "1.4rem" }}>WORKSHOPS &amp; EXHIBITIONS</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              {[
+                ["2023", 'Rolex Arts Festival — PlayStreet Athens (Mentor: Gloria Cabral / presented to Anne Lacaton)'],
+                ["2021", 'UPDATE MY CITY — Chania Public Space, with UN-HABITAT & Center of Mediterranean Architecture'],
+                ["2019", 'Athina Poli Exhibition, Heraklion — Selected among 50 students to represent TUC'],
+              ].map(([yr, desc]) => (
+                <div key={yr} style={{ display: "flex", gap: "2rem", alignItems: "baseline" }}>
+                  <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.6rem", color: "var(--accent)", minWidth: "36px" }}>{yr}</span>
+                  <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.68rem", lineHeight: 1.8, color: "rgba(224,224,224,0.5)" }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Other pursuits ────────────────────────────────────────────────── */}
+        <section style={{
+          padding: "clamp(4rem,8vw,8rem) clamp(1.5rem,6vw,6rem)",
+          borderTop: "1px solid rgba(224,224,224,0.06)",
+        }}>
+          <p style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.62rem", letterSpacing: "0.22em", color: "var(--accent)", marginBottom: "1.2rem" }}>
+            004 / BEYOND ARCHITECTURE
           </p>
           <h2 style={{
             fontFamily: "Syncopate,sans-serif", fontWeight: 700,
@@ -281,7 +379,6 @@ export default function AboutPage() {
           }}>
             OTHER<br />PURSUITS
           </h2>
-
           {[
             { label: "PHOTOGRAPHY",       tag: "ANALOG / DIGITAL"   },
             { label: "DRONE VIDEOGRAPHY", tag: "AERIAL / CINEMATIC" },
@@ -294,26 +391,14 @@ export default function AboutPage() {
               <div className="pursuits-grid">
                 {[1, 2, 3].map((n) => (
                   <div key={n} style={{
-                    aspectRatio: "4/3",
-                    background: "#0d0d0d",
+                    aspectRatio: "4/3", background: "#0d0d0d",
                     border: "1px solid rgba(224,224,224,0.07)",
-                    overflow: "hidden",
-                    position: "relative",
+                    overflow: "hidden", position: "relative",
+                    display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="https://placehold.co/600x450/0d0d0d/1a1a1a"
-                      alt=""
-                      style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.3 }}
-                    />
-                    <div style={{
-                      position: "absolute", inset: 0,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.55rem", letterSpacing: "0.18em", color: "rgba(224,224,224,0.2)" }}>
-                        COMING SOON
-                      </span>
-                    </div>
+                    <img src="https://placehold.co/600x450/0d0d0d/1a1a1a" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.3 }} />
+                    <span style={{ position: "absolute", fontFamily: "Share Tech Mono,monospace", fontSize: "0.55rem", letterSpacing: "0.18em", color: "rgba(224,224,224,0.18)" }}>COMING SOON</span>
                   </div>
                 ))}
               </div>
@@ -321,13 +406,12 @@ export default function AboutPage() {
           ))}
         </section>
 
-        {/* ── Instagram placeholder banner ─────────────────────────────────── */}
+        {/* ── Instagram placeholder ─────────────────────────────────────────── */}
         <section style={{
           borderTop: "1px solid rgba(224,224,224,0.06)",
           background: "#080808",
           padding: "clamp(3rem,6vw,5rem) clamp(1.5rem,6vw,6rem)",
         }}>
-          {/* Header row */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.8rem", flexWrap: "wrap", gap: "1rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -335,68 +419,48 @@ export default function AboutPage() {
                 <circle cx="12" cy="12" r="4"/>
                 <circle cx="17.5" cy="6.5" r="1" fill="var(--accent)" stroke="none"/>
               </svg>
-              <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.65rem", letterSpacing: "0.18em", color: "var(--silver)" }}>
-                @NIKOLAOSKALAITZIDIS
-              </span>
+              <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.65rem", letterSpacing: "0.18em", color: "var(--silver)" }}>@NK_DESIGNS</span>
             </div>
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                fontFamily: "Syncopate,sans-serif", fontSize: "0.55rem", letterSpacing: "0.14em",
-                color: "var(--accent)", textDecoration: "none",
-                border: "1px solid rgba(255,60,0,0.35)", padding: "0.45rem 1rem",
-                transition: "background 0.2s",
-              }}
-            >
-              FOLLOW ↗
-            </a>
+            <a href="https://instagram.com/NK_Designs" target="_blank" rel="noopener noreferrer" style={{
+              fontFamily: "Syncopate,sans-serif", fontSize: "0.55rem", letterSpacing: "0.14em",
+              color: "var(--accent)", textDecoration: "none",
+              border: "1px solid rgba(255,60,0,0.35)", padding: "0.45rem 1rem",
+            }}>FOLLOW ↗</a>
           </div>
-
-          {/* Placeholder grid */}
           <div className="ig-grid">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} style={{
                 aspectRatio: "1/1", background: "#0d0d0d",
                 border: "1px solid rgba(224,224,224,0.05)",
-                position: "relative", overflow: "hidden",
-                display: "flex", alignItems: "center", justifyContent: "center",
+                position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="https://placehold.co/300x300/0d0d0d/141414" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                <div style={{
-                  position: "absolute", inset: 0,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(224,224,224,0.12)" strokeWidth="1.2">
+                <div style={{ position: "absolute" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(224,224,224,0.1)" strokeWidth="1.2">
                     <rect x="2" y="2" width="20" height="20" rx="5"/>
                     <circle cx="12" cy="12" r="4"/>
-                    <circle cx="17.5" cy="6.5" r="1" fill="rgba(224,224,224,0.12)" stroke="none"/>
+                    <circle cx="17.5" cy="6.5" r="1" fill="rgba(224,224,224,0.1)" stroke="none"/>
                   </svg>
                 </div>
               </div>
             ))}
           </div>
-
-          <p style={{
-            fontFamily: "Share Tech Mono,monospace", fontSize: "0.55rem",
-            letterSpacing: "0.14em", color: "rgba(224,224,224,0.18)",
-            marginTop: "1.4rem", textAlign: "center",
-          }}>
+          <p style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.55rem", letterSpacing: "0.14em", color: "rgba(224,224,224,0.18)", marginTop: "1.4rem", textAlign: "center" }}>
             [ LIVE INSTAGRAM FEED — COMING SOON ]
           </p>
         </section>
 
-        {/* ── Footer ──────────────────────────────────────────────────────── */}
+        {/* ── Footer ────────────────────────────────────────────────────────── */}
         <footer style={{
           padding: "2rem clamp(1.5rem,6vw,6rem)",
           borderTop: "1px solid rgba(224,224,224,0.06)",
           display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem",
         }}>
-          <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.58rem", color: "rgba(224,224,224,0.2)", letterSpacing: "0.12em" }}>
-            © {new Date().getFullYear()} NIKOLAOS KALAITZIDIS
-          </span>
+          <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
+            <a href="https://linkedin.com/in/kontalis-nikos" target="_blank" rel="noopener noreferrer" style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.58rem", color: "rgba(224,224,224,0.3)", letterSpacing: "0.1em", textDecoration: "none" }}>LINKEDIN ↗</a>
+            <a href="https://instagram.com/NK_Designs" target="_blank" rel="noopener noreferrer" style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.58rem", color: "rgba(224,224,224,0.3)", letterSpacing: "0.1em", textDecoration: "none" }}>INSTAGRAM ↗</a>
+          </div>
           <Link href="/" style={{ fontFamily: "Syncopate,sans-serif", fontSize: "0.55rem", letterSpacing: "0.12em", color: "var(--accent)", textDecoration: "none" }}>
             BACK TO HOME ↑
           </Link>
