@@ -45,6 +45,70 @@ const experience = [
   },
 ];
 
+// ── Animated SVG logo ─────────────────────────────────────────────────────────
+// Recreates the PNG logo with stroke-dashoffset draw animation on mount.
+// pathLength="1" lets us use dasharray/dashoffset values of 0–1 regardless of
+// actual geometry, so no path-length math needed.
+function AnimatedLogo({ trigger }: { trigger: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ width: "clamp(100px,16vw,220px)", height: "auto", overflow: "visible" }}
+      aria-label="Nikolaos Kalaitzidis logo"
+    >
+      <defs>
+        {/* Triangle gradient: light top → dark bottom, matches the PNG */}
+        <linearGradient id="aboutTriGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="rgba(185,185,185,0.92)" />
+          <stop offset="100%" stopColor="rgba(22,22,22,0.96)"    />
+        </linearGradient>
+
+        <style>{`
+          .al-line {
+            stroke-dasharray: 1;
+            stroke-dashoffset: 1;
+            fill: none;
+          }
+          .al-tri {
+            opacity: 0;
+          }
+          /* Draw animations — only activate once trigger=true */
+          ${trigger ? `
+            .al-l1 { animation: alDraw 1.1s cubic-bezier(0.16,1,0.3,1) 0.05s forwards; }
+            .al-l2 { animation: alDraw 1.1s cubic-bezier(0.16,1,0.3,1) 0.18s forwards; }
+            .al-l3 { animation: alDraw 0.85s cubic-bezier(0.16,1,0.3,1) 0.55s forwards; }
+            .al-tri { animation: alFade 0.9s ease 0.85s forwards; }
+            @keyframes alDraw { to { stroke-dashoffset: 0; } }
+            @keyframes alFade { to { opacity: 1; }           }
+          ` : ""}
+        `}</style>
+      </defs>
+
+      {/* Left diagonal pole — bottom-left → top-right, extends past crossing */}
+      <line className="al-line al-l1" pathLength="1"
+        x1="20" y1="196" x2="128" y2="4"
+        stroke="white" strokeWidth="2.4" strokeLinecap="round" />
+
+      {/* Right diagonal pole — bottom-right → top-left, extends past crossing */}
+      <line className="al-line al-l2" pathLength="1"
+        x1="180" y1="196" x2="72" y2="4"
+        stroke="white" strokeWidth="2.4" strokeLinecap="round" />
+
+      {/* Horizontal bar */}
+      <line className="al-line al-l3" pathLength="1"
+        x1="6" y1="131" x2="194" y2="131"
+        stroke="white" strokeWidth="2.4" strokeLinecap="round" />
+
+      {/* Inner gradient triangle — fades in after lines are drawn */}
+      <polygon className="al-tri"
+        points="100,56 70,131 130,131"
+        fill="url(#aboutTriGrad)"
+        stroke="white" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
 const droneImages = [
   "/Drone/01_Images/DJI_0239.webp",
   "/Drone/01_Images/DJI_0248.webp",
@@ -195,12 +259,7 @@ export default function AboutPage() {
             background: "radial-gradient(ellipse 55% 45% at 50% 50%, rgba(255,60,0,0.05) 0%, transparent 70%)",
             pointerEvents: "none",
           }} />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Nikolaos Kalaitzidis" style={{
-            width: "clamp(100px,16vw,220px)", height: "auto",
-            filter: "invert(1) brightness(2)",
-            animation: "breathe 5s ease-in-out infinite",
-          }} />
+          <AnimatedLogo trigger={mounted} />
           <p style={{
             fontFamily: "Share Tech Mono,monospace", fontSize: "0.62rem",
             letterSpacing: "0.28em", color: "rgba(224,224,224,0.28)",
