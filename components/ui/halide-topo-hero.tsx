@@ -3,11 +3,29 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
+
+const PDF_URL = "/projects/Old_Portfolio/Kalaitzidis%20Nikolaos%202025.pdf";
 
 // Load Three.js scene client-side only (no SSR)
 const Hero3DScene = dynamic(() => import("./hero-3d-scene"), { ssr: false });
 
 export const HalideTopoHero = () => {
+  const [pdfOpen, setPdfOpen] = useState(false);
+
+  // Lock body scroll while overlay is open
+  useEffect(() => {
+    document.body.style.overflow = pdfOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [pdfOpen]);
+
+  // Close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setPdfOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   return (
     <>
       {/* SVG Grain Filter */}
@@ -164,7 +182,12 @@ export const HalideTopoHero = () => {
               <p style={{ color: "var(--accent)" }}>[ ARCHITECTURAL STUDIO ]</p>
               <p>WE DESIGN YOUR DREAMS</p>
             </div>
-            <a href="#projects" className="cta-button" style={{ pointerEvents: "auto" }}>
+            <a
+              href="#projects"
+              className="cta-button"
+              style={{ pointerEvents: "auto" }}
+              onClick={(e) => { e.preventDefault(); setPdfOpen(true); }}
+            >
               VIEW PORTFOLIO
             </a>
           </div>
@@ -173,6 +196,112 @@ export const HalideTopoHero = () => {
         {/* Scroll indicator */}
         <div className="scroll-hint" />
       </section>
+
+      {/* ── PDF Portfolio Overlay ─────────────────────────────────────────── */}
+      {pdfOpen && (
+        <>
+          <style>{`
+            @keyframes pdfFadeIn  { from { opacity:0; } to { opacity:1; } }
+            @keyframes pdfSlideUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+          `}</style>
+
+          {/* Backdrop — click outside PDF to close */}
+          <div
+            onClick={() => setPdfOpen(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 900,
+              background: "rgba(0,0,0,0.92)",
+              backdropFilter: "blur(4px)",
+              WebkitBackdropFilter: "blur(4px)",
+              animation: "pdfFadeIn 0.35s ease",
+            }}
+          />
+
+          {/* PDF frame — stops clicks from closing */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 901,
+              width: "min(860px, 88vw)",
+              height: "88vh",
+              display: "flex",
+              flexDirection: "column",
+              animation: "pdfSlideUp 0.4s cubic-bezier(0.16,1,0.3,1)",
+            }}
+          >
+            {/* Top bar */}
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "0.6rem",
+              paddingInline: "2px",
+            }}>
+              <span style={{
+                fontFamily: "'Share Tech Mono', monospace",
+                fontSize: "0.58rem",
+                letterSpacing: "0.2em",
+                color: "rgba(224,224,224,0.35)",
+              }}>
+                KALAITZIDIS NIKOLAOS — PORTFOLIO 2025
+              </span>
+              <button
+                onClick={() => setPdfOpen(false)}
+                style={{
+                  background: "none",
+                  border: "1px solid rgba(224,224,224,0.2)",
+                  color: "rgba(224,224,224,0.55)",
+                  fontFamily: "'Share Tech Mono', monospace",
+                  fontSize: "0.58rem",
+                  letterSpacing: "0.15em",
+                  cursor: "pointer",
+                  padding: "0.3rem 0.75rem",
+                  transition: "border-color 0.2s, color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,60,0,0.6)";
+                  (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(224,224,224,0.2)";
+                  (e.currentTarget as HTMLButtonElement).style.color = "rgba(224,224,224,0.55)";
+                }}
+              >
+                CLOSE ×
+              </button>
+            </div>
+
+            {/* PDF iframe */}
+            <iframe
+              src={`${PDF_URL}#view=FitH`}
+              style={{
+                flex: 1,
+                border: "1px solid rgba(224,224,224,0.08)",
+                background: "#0a0a0a",
+              }}
+              title="Portfolio PDF"
+            />
+
+            {/* Bottom hint */}
+            <p style={{
+              fontFamily: "'Share Tech Mono', monospace",
+              fontSize: "0.5rem",
+              letterSpacing: "0.18em",
+              color: "rgba(224,224,224,0.2)",
+              textAlign: "center",
+              marginTop: "0.5rem",
+            }}>
+              CLICK OUTSIDE TO CLOSE · SCROLL TO NAVIGATE PAGES · ESC TO EXIT
+            </p>
+          </div>
+        </>
+      )}
     </>
   );
 };
