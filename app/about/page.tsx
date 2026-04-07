@@ -51,6 +51,10 @@ const experience = [
 // actual geometry, so no path-length math needed.
 function AnimatedLogo({ trigger }: { trigger: boolean }) {
   return (
+    <div style={{
+      display: "inline-flex",
+      animation: trigger ? "alBreathe 4s ease-in-out 2s infinite" : "none",
+    }}>
     <svg
       viewBox="0 0 324.26 311.61"
       xmlns="http://www.w3.org/2000/svg"
@@ -85,9 +89,13 @@ function AnimatedLogo({ trigger }: { trigger: boolean }) {
             .al-b2  { animation: alDraw 0.7s cubic-bezier(0.16,1,0.3,1) 0.75s forwards; }
             /* Triangle fades in last */
             .al-tri { animation: alFade 0.9s ease 1.1s forwards; }
-            @keyframes alDraw { to { stroke-dashoffset: 0; } }
-            @keyframes alFade { to { opacity: 1; }           }
+            @keyframes alDraw    { to { stroke-dashoffset: 0; } }
+            @keyframes alFade    { to { opacity: 1; }           }
           ` : ""}
+          @keyframes alBreathe {
+            0%, 100% { transform: scale(1);     }
+            50%       { transform: scale(1.045); }
+          }
         `}</style>
       </defs>
 
@@ -117,6 +125,7 @@ function AnimatedLogo({ trigger }: { trigger: boolean }) {
         fill="url(#alGrad)"
         stroke="#fff" strokeWidth="3" strokeMiterlimit="10" />
     </svg>
+    </div>
   );
 }
 
