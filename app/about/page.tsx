@@ -58,53 +58,60 @@ function AnimatedLogo({ trigger }: { trigger: boolean }) {
       aria-label="Nikolaos Kalaitzidis logo"
     >
       <defs>
-        {/* Triangle gradient: light top → dark bottom, matches the PNG */}
+        {/*
+          Gradient: solid silver at top → near-black at bottom.
+          On the dark bg this makes the triangle bright at apex,
+          fading into the bg at the base — matching the original PNG feel.
+        */}
         <linearGradient id="aboutTriGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="rgba(185,185,185,0.92)" />
-          <stop offset="100%" stopColor="rgba(22,22,22,0.96)"    />
+          <stop offset="0%"   stopColor="#c8c8c8" />
+          <stop offset="100%" stopColor="#111111" />
         </linearGradient>
 
         <style>{`
-          .al-line {
-            stroke-dasharray: 1;
-            stroke-dashoffset: 1;
-            fill: none;
-          }
-          .al-tri {
-            opacity: 0;
-          }
-          /* Draw animations — only activate once trigger=true */
+          .al-line { stroke-dasharray: 1; stroke-dashoffset: 1; fill: none; }
+          .al-tri  { opacity: 0; }
           ${trigger ? `
-            .al-l1 { animation: alDraw 1.1s cubic-bezier(0.16,1,0.3,1) 0.05s forwards; }
-            .al-l2 { animation: alDraw 1.1s cubic-bezier(0.16,1,0.3,1) 0.18s forwards; }
-            .al-l3 { animation: alDraw 0.85s cubic-bezier(0.16,1,0.3,1) 0.55s forwards; }
-            .al-tri { animation: alFade 0.9s ease 0.85s forwards; }
+            .al-l1  { animation: alDraw 1.1s cubic-bezier(0.16,1,0.3,1) 0.05s forwards; }
+            .al-l2  { animation: alDraw 1.1s cubic-bezier(0.16,1,0.3,1) 0.18s forwards; }
+            .al-l3  { animation: alDraw 0.85s cubic-bezier(0.16,1,0.3,1) 0.6s  forwards; }
+            .al-tri { animation: alFade 0.9s  ease                       0.95s forwards; }
             @keyframes alDraw { to { stroke-dashoffset: 0; } }
             @keyframes alFade { to { opacity: 1; }           }
           ` : ""}
         `}</style>
       </defs>
 
-      {/* Left diagonal pole — bottom-left → top-right, extends past crossing */}
+      {/*
+        Pole coordinates measured from the original PNG (713×713 px → 200×200 vb):
+          Left pole  bottom: (14%, 97%) → (28, 194)   top: (67%, 6%) → (134, 12)
+          Right pole bottom: (86%, 97%) → (172, 194)  top: (33%, 6%) → (66,  12)
+          Crossing at (100, 70) — this is also the triangle apex.
+          Horizontal bar at y=131 (65% height), x 4%→96% → (8, 131)→(192, 131)
+          Triangle base: (36%, 65%)→(64%, 65%) → (72, 131)→(128, 131)
+      */}
+
+      {/* Left diagonal pole */}
       <line className="al-line al-l1" pathLength="1"
-        x1="20" y1="196" x2="128" y2="4"
-        stroke="white" strokeWidth="2.4" strokeLinecap="round" />
+        x1="28"  y1="194"  x2="134" y2="12"
+        stroke="white" strokeWidth="2.2" strokeLinecap="square" />
 
-      {/* Right diagonal pole — bottom-right → top-left, extends past crossing */}
+      {/* Right diagonal pole */}
       <line className="al-line al-l2" pathLength="1"
-        x1="180" y1="196" x2="72" y2="4"
-        stroke="white" strokeWidth="2.4" strokeLinecap="round" />
+        x1="172" y1="194"  x2="66"  y2="12"
+        stroke="white" strokeWidth="2.2" strokeLinecap="square" />
 
-      {/* Horizontal bar */}
+      {/* Horizontal bar — wide, same weight as poles */}
       <line className="al-line al-l3" pathLength="1"
-        x1="6" y1="131" x2="194" y2="131"
-        stroke="white" strokeWidth="2.4" strokeLinecap="round" />
+        x1="8"   y1="131"  x2="192" y2="131"
+        stroke="white" strokeWidth="2.2" strokeLinecap="square" />
 
-      {/* Inner gradient triangle — fades in after lines are drawn */}
+      {/* Inner triangle — apex at crossing point, base on horizontal bar */}
       <polygon className="al-tri"
-        points="100,56 70,131 130,131"
+        points="100,70 72,131 128,131"
         fill="url(#aboutTriGrad)"
-        stroke="white" strokeWidth="1.6" />
+        stroke="rgba(255,255,255,0.25)"
+        strokeWidth="1" />
     </svg>
   );
 }
