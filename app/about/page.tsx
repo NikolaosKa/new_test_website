@@ -46,48 +46,74 @@ const experience = [
 ];
 
 // ── Logo break / assemble ─────────────────────────────────────────────────────
-// The logo splits into 9 pieces. Break order: top → bottom, one piece every
-// ~0.45 s (full sequence ≈ 3.5 s). Each piece has a custom keyframe with
-// gravity easing + landing bounce.  All fall distances are calculated so the
-// pile lands ABOVE "ARCHITECTURAL STUDIO" (pile visual ≈ 160–230 px from
-// container top; text starts ≈ 251 px below container top at ~211 px height).
-// Tiny rotations (±5°) and x-offsets (±4 px) keep the pile neat and linear.
-// The clickable pile target is a dedicated div positioned at the pile location.
+// 18 pieces: left pole ×5, right pole ×5, left bar ×2, right bar ×2,
+//            triangle ×4 (sub-divided).
+// Pole pieces rotate ≈±64° so they land horizontally (like snapped rods).
+// Bars already horizontal — small tilt ±10-14°.
+// Triangle split into 4 sub-triangles — moderate rotations ±15-25°.
+// Break order: top → bottom, one piece every ~0.20s.
+// The "CLICK TO RESTORE" hint is rendered OUTSIDE the pieces container at high
+// z-index so it always appears above the fallen geometry.
 
 type LogoState = "idle" | "breaking" | "broken" | "assembling";
 
-// fallY: CSS px the piece translates down (at ~211 px logo height).
-//   Target pile centre = 195 px from container top.
-//   Piece centre (px) comes from: svg_centre_y * (211/311.61).
-//   fallY = 195 - piece_centre_px (clamped ≥ 12 px).
-// breakDelay: seconds — staggered 0.45 s apart, top-first.
-// asmDelay:   seconds — reverse order so bottom pieces reassemble first.
+// SVG coordinate reference:
+//   Left pole:  (203.23,1.08)→(54.64,310.53)  step dx=-29.718 dy=+61.89
+//   Right pole: (136.85,22.02)→(237.45,235.98) step dx=+20.12  dy=+42.792
+//   Left bar:   M0,211.47H126.29  split at x=63.15
+//   Right bar:  M203.23,211.47H324.26 split at x=263.74
+//   Triangle:   A(164.6,131.8) B(115.79,233.31) C(213.85,233.31)
+//               midpoints M_AB(140.2,182.56) M_AC(189.23,182.56) M_BC(164.82,233.31)
+//
+// fallY: px the piece drops at ~211px render height. Target pile centre ≈175 px.
+//   Formula: fallY = 175 - (svgCentreY × 211/311.61), clamped ≥ 5 px.
+//
+// rot: CSS rotation degrees at rest — pole pieces near ±64° to appear horizontal.
+// origin: transform-origin = (svgCentreX/324.26 × 100%, svgCentreY/311.61 × 100%)
 const PIECES = [
-  //              fallY  fallX  rot  breakDelay asmDelay breakDur asmDur  origin
-  { id:"lp1", fallY:159, fallX: 0, rot: -5, breakDelay:0.00, asmDelay:0.70, breakDur:0.65, asmDur:0.85, origin:"55% 17%" },
-  { id:"rp1", fallY:156, fallX: 2, rot:  6, breakDelay:0.45, asmDelay:0.55, breakDur:0.64, asmDur:0.85, origin:"47% 19%" },
-  { id:"lp2", fallY: 90, fallX: 3, rot:  4, breakDelay:0.90, asmDelay:0.30, breakDur:0.48, asmDur:0.78, origin:"40% 50%" },
-  { id:"rp2", fallY:108, fallX:-3, rot: -5, breakDelay:1.35, asmDelay:0.22, breakDur:0.52, asmDur:0.78, origin:"58% 41%" },
-  { id:"tri", fallY: 60, fallX: 1, rot: -4, breakDelay:1.70, asmDelay:0.35, breakDur:0.38, asmDur:0.75, origin:"51% 64%" },
-  { id:"lp3", fallY: 20, fallX:-2, rot: -3, breakDelay:2.00, asmDelay:0.15, breakDur:0.25, asmDur:0.70, origin:"25% 83%" },
-  { id:"rp3", fallY: 59, fallX: 1, rot:  4, breakDelay:2.35, asmDelay:0.10, breakDur:0.38, asmDur:0.75, origin:"68% 64%" },
-  { id:"lb",  fallY: 52, fallX:-4, rot: -2, breakDelay:2.70, asmDelay:0.05, breakDur:0.36, asmDur:0.70, origin:"20% 68%" },
-  { id:"rb",  fallY: 52, fallX: 4, rot:  3, breakDelay:3.00, asmDelay:0.00, breakDur:0.36, asmDur:0.70, origin:"81% 68%" },
+  // Left pole — 5 segments, rotate CW ~64° (pole goes down-left, becomes horiz)
+  { id:"lp1", fallY:153, fallX:-2, rot: 64, breakDelay:0.00, asmDelay:0.66, breakDur:0.60, asmDur:0.82, origin:"58% 10%" },
+  { id:"lp2", fallY:111, fallX: 0, rot: 66, breakDelay:0.60, asmDelay:0.53, breakDur:0.51, asmDur:0.80, origin:"49% 30%" },
+  { id:"lp3", fallY: 69, fallX: 2, rot: 63, breakDelay:1.00, asmDelay:0.44, breakDur:0.40, asmDur:0.76, origin:"40% 50%" },
+  { id:"lp4", fallY: 27, fallX:-1, rot: 65, breakDelay:2.55, asmDelay:0.10, breakDur:0.25, asmDur:0.70, origin:"31% 70%" },
+  { id:"lp5", fallY:  5, fallX: 1, rot: 62, breakDelay:3.00, asmDelay:0.00, breakDur:0.20, asmDur:0.68, origin:"21% 90%" },
+
+  // Right pole — 5 segments, rotate CCW ~-64° (pole goes down-right, becomes horiz)
+  { id:"rp1", fallY:146, fallX: 2, rot:-64, breakDelay:0.20, asmDelay:0.62, breakDur:0.59, asmDur:0.82, origin:"45% 14%" },
+  { id:"rp2", fallY:117, fallX:-1, rot:-66, breakDelay:0.40, asmDelay:0.57, breakDur:0.52, asmDur:0.80, origin:"52% 28%" },
+  { id:"rp3", fallY: 88, fallX: 3, rot:-63, breakDelay:0.80, asmDelay:0.48, breakDur:0.45, asmDur:0.77, origin:"58% 41%" },
+  { id:"rp4", fallY: 59, fallX:-2, rot:-65, breakDelay:1.40, asmDelay:0.35, breakDur:0.37, asmDur:0.73, origin:"64% 55%" },
+  { id:"rp5", fallY: 30, fallX: 1, rot:-62, breakDelay:2.40, asmDelay:0.13, breakDur:0.27, asmDur:0.70, origin:"70% 69%" },
+
+  // Left bar — 2 halves, already horizontal, small tilt
+  { id:"lb1", fallY: 32, fallX:-3, rot:-14, breakDelay:1.80, asmDelay:0.26, breakDur:0.27, asmDur:0.70, origin:"10% 68%" },
+  { id:"lb2", fallY: 32, fallX: 1, rot: 11, breakDelay:1.95, asmDelay:0.23, breakDur:0.27, asmDur:0.70, origin:"29% 68%" },
+
+  // Right bar — 2 halves, already horizontal, small tilt
+  { id:"rb1", fallY: 32, fallX:-1, rot: 13, breakDelay:2.10, asmDelay:0.20, breakDur:0.27, asmDur:0.70, origin:"72% 68%" },
+  { id:"rb2", fallY: 32, fallX: 3, rot:-10, breakDelay:2.25, asmDelay:0.17, breakDur:0.27, asmDur:0.70, origin:"91% 68%" },
+
+  // Triangle — 4 sub-triangles
+  { id:"t1",  fallY: 63, fallX: 0, rot:-25, breakDelay:1.20, asmDelay:0.40, breakDur:0.38, asmDur:0.74, origin:"51% 53%" },
+  { id:"t4",  fallY: 40, fallX: 1, rot: 15, breakDelay:1.60, asmDelay:0.31, breakDur:0.31, asmDur:0.71, origin:"51% 64%" },
+  { id:"t2",  fallY: 28, fallX:-2, rot: 20, breakDelay:2.70, asmDelay:0.07, breakDur:0.26, asmDur:0.68, origin:"43% 69%" },
+  { id:"t3",  fallY: 28, fallX: 2, rot:-18, breakDelay:2.85, asmDelay:0.03, breakDur:0.26, asmDur:0.68, origin:"58% 69%" },
 ] as const;
 
-// Per-piece CSS keyframes injected into <style> at render time.
-// break-*: gravity easing with 5% overshoot + 2% undershoot (landing bounce).
-// assemble-*: spring return with 7px upward overshoot at 85%.
+// Per-piece CSS keyframes.
+// break: ease-in (gravity) with 5% Y-overshoot at 72% + 2% bounce at 86%.
+//        Rotation also overshoots 12% at 72%, undershoots 7% at 86%, settles.
+// assemble: spring return — starts from broken position, 7px overshoot at 85%.
 const PIECE_KEYFRAMES = PIECES.map(p => {
-  const oy  = p.fallY + Math.round(p.fallY * 0.055); // overshoot
-  const uy  = p.fallY - Math.round(p.fallY * 0.020); // undershoot
+  const oy  = p.fallY + Math.round(p.fallY * 0.055);
+  const uy  = p.fallY - Math.round(p.fallY * 0.020);
   const or_ = +(p.rot * 1.12).toFixed(1);
   const ur_ = +(p.rot * 0.93).toFixed(1);
   return `
     @keyframes break-${p.id} {
-      0%   { transform: translateY(0px)          translateX(0px)       rotate(0deg);      }
-      72%  { transform: translateY(${oy}px)      translateX(${p.fallX}px) rotate(${or_}deg); }
-      86%  { transform: translateY(${uy}px)      translateX(${p.fallX}px) rotate(${ur_}deg); }
+      0%   { transform: translateY(0px)          translateX(0px)          rotate(0deg);        }
+      72%  { transform: translateY(${oy}px)      translateX(${p.fallX}px) rotate(${or_}deg);   }
+      86%  { transform: translateY(${uy}px)      translateX(${p.fallX}px) rotate(${ur_}deg);   }
       100% { transform: translateY(${p.fallY}px) translateX(${p.fallX}px) rotate(${p.rot}deg); }
     }
     @keyframes assemble-${p.id} {
@@ -97,37 +123,64 @@ const PIECE_KEYFRAMES = PIECES.map(p => {
     }`;
 }).join('\n');
 
-// SVG element rendered inside each piece's viewBox-matched SVG
+// SVG content for each piece
 function PieceContent({ id }: { id: string }) {
   const sm = { strokeMiterlimit: 10 } as const;
-  if (id === "lp1") return <line {...sm} x1="203.23" y1="1.08"   x2="153.70" y2="104.23" stroke="#fff" strokeWidth="5" />;
-  if (id === "lp2") return <line {...sm} x1="153.70" y1="104.23" x2="104.17" y2="207.38" stroke="#fff" strokeWidth="5" />;
-  if (id === "lp3") return <line {...sm} x1="104.17" y1="207.38" x2="54.64"  y2="310.53" stroke="#fff" strokeWidth="5" />;
-  if (id === "rp1") return <line {...sm} x1="136.85" y1="22.02"  x2="170.38" y2="93.34"  stroke="#fff" strokeWidth="4" />;
-  if (id === "rp2") return <line {...sm} x1="170.38" y1="93.34"  x2="203.91" y2="164.66" stroke="#fff" strokeWidth="4" />;
-  if (id === "rp3") return <line {...sm} x1="203.91" y1="164.66" x2="237.45" y2="235.98" stroke="#fff" strokeWidth="4" />;
-  if (id === "lb")  return <path {...sm} d="M126.29,211.47H0"        stroke="#fff" strokeWidth="6" fill="none" />;
-  if (id === "rb")  return <path {...sm} d="M203.23,211.47h121.02"   stroke="#fff" strokeWidth="6" fill="none" />;
-  if (id === "tri") return (
-    <>
-      <defs>
-        <linearGradient id="triGradP" x1="142.73" y1="251.49" x2="205.05" y2="159.09" gradientUnits="userSpaceOnUse">
-          <stop offset="0"   stopColor="#fff"    stopOpacity="1"  />
-          <stop offset=".2"  stopColor="#fcfcfc" stopOpacity=".99"/>
-          <stop offset=".33" stopColor="#f4f4f4" stopOpacity=".95"/>
-          <stop offset=".45" stopColor="#e7e7e7" stopOpacity=".89"/>
-          <stop offset=".55" stopColor="#d5d4d4" stopOpacity=".81"/>
-          <stop offset=".65" stopColor="#bdbbbc" stopOpacity=".7" />
-          <stop offset=".74" stopColor="#9f9d9e" stopOpacity=".57"/>
-          <stop offset=".83" stopColor="#7c7a7a" stopOpacity=".41"/>
-          <stop offset=".91" stopColor="#535051" stopOpacity=".22"/>
-          <stop offset=".99" stopColor="#272324" stopOpacity=".02"/>
-          <stop offset="1"   stopColor="#231f20" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon {...sm} points="164.6,131.8 115.79,233.31 213.85,233.31"
-        fill="url(#triGradP)" stroke="#fff" strokeWidth="3" />
-    </>
+
+  // Left pole — 5 segments
+  if (id === "lp1") return <line {...sm} x1="203.23" y1="1.08"   x2="173.51" y2="62.97"  stroke="#fff" strokeWidth="5" fill="none" />;
+  if (id === "lp2") return <line {...sm} x1="173.51" y1="62.97"  x2="143.79" y2="124.86" stroke="#fff" strokeWidth="5" fill="none" />;
+  if (id === "lp3") return <line {...sm} x1="143.79" y1="124.86" x2="114.07" y2="186.75" stroke="#fff" strokeWidth="5" fill="none" />;
+  if (id === "lp4") return <line {...sm} x1="114.07" y1="186.75" x2="84.35"  y2="248.64" stroke="#fff" strokeWidth="5" fill="none" />;
+  if (id === "lp5") return <line {...sm} x1="84.35"  y1="248.64" x2="54.64"  y2="310.53" stroke="#fff" strokeWidth="5" fill="none" />;
+
+  // Right pole — 5 segments
+  if (id === "rp1") return <line {...sm} x1="136.85" y1="22.02"  x2="156.97" y2="64.81"  stroke="#fff" strokeWidth="4" fill="none" />;
+  if (id === "rp2") return <line {...sm} x1="156.97" y1="64.81"  x2="177.09" y2="107.60" stroke="#fff" strokeWidth="4" fill="none" />;
+  if (id === "rp3") return <line {...sm} x1="177.09" y1="107.60" x2="197.21" y2="150.39" stroke="#fff" strokeWidth="4" fill="none" />;
+  if (id === "rp4") return <line {...sm} x1="197.21" y1="150.39" x2="217.33" y2="193.18" stroke="#fff" strokeWidth="4" fill="none" />;
+  if (id === "rp5") return <line {...sm} x1="217.33" y1="193.18" x2="237.45" y2="235.98" stroke="#fff" strokeWidth="4" fill="none" />;
+
+  // Left bar — 2 halves
+  if (id === "lb1") return <line {...sm} x1="0"     y1="211.47" x2="63.15"  y2="211.47" stroke="#fff" strokeWidth="6" fill="none" />;
+  if (id === "lb2") return <line {...sm} x1="63.15" y1="211.47" x2="126.29" y2="211.47" stroke="#fff" strokeWidth="6" fill="none" />;
+
+  // Right bar — 2 halves
+  if (id === "rb1") return <line {...sm} x1="203.23" y1="211.47" x2="263.74" y2="211.47" stroke="#fff" strokeWidth="6" fill="none" />;
+  if (id === "rb2") return <line {...sm} x1="263.74" y1="211.47" x2="324.26" y2="211.47" stroke="#fff" strokeWidth="6" fill="none" />;
+
+  // Triangle — 4 sub-triangles sharing the same gradient
+  const gradId = `triG-${id}`;
+  const gradDef = (
+    <linearGradient id={gradId} x1="142.73" y1="251.49" x2="205.05" y2="159.09" gradientUnits="userSpaceOnUse">
+      <stop offset="0"   stopColor="#fff"    stopOpacity="1"  />
+      <stop offset=".33" stopColor="#f4f4f4" stopOpacity=".95"/>
+      <stop offset=".55" stopColor="#d5d4d4" stopOpacity=".81"/>
+      <stop offset=".74" stopColor="#9f9d9e" stopOpacity=".57"/>
+      <stop offset=".91" stopColor="#535051" stopOpacity=".22"/>
+      <stop offset="1"   stopColor="#231f20" stopOpacity="0"  />
+    </linearGradient>
+  );
+  // t1 = apex triangle, t2 = bottom-left, t3 = bottom-right, t4 = center
+  if (id === "t1") return (
+    <><defs>{gradDef}</defs>
+    <polygon {...sm} points="164.6,131.8 140.2,182.56 189.23,182.56"
+      fill={`url(#${gradId})`} stroke="#fff" strokeWidth="2.5" /></>
+  );
+  if (id === "t2") return (
+    <><defs>{gradDef}</defs>
+    <polygon {...sm} points="140.2,182.56 115.79,233.31 164.82,233.31"
+      fill={`url(#${gradId})`} stroke="#fff" strokeWidth="2.5" /></>
+  );
+  if (id === "t3") return (
+    <><defs>{gradDef}</defs>
+    <polygon {...sm} points="189.23,182.56 164.82,233.31 213.85,233.31"
+      fill={`url(#${gradId})`} stroke="#fff" strokeWidth="2.5" /></>
+  );
+  if (id === "t4") return (
+    <><defs>{gradDef}</defs>
+    <polygon {...sm} points="140.2,182.56 189.23,182.56 164.82,233.31"
+      fill={`url(#${gradId})`} stroke="#fff" strokeWidth="2.5" /></>
   );
   return null;
 }
@@ -144,7 +197,6 @@ function AnimatedLogo({
   const showPieces = logoState !== "idle";
   const logoW = "clamp(100px,16vw,220px)";
 
-  // Piece animation string per state
   const pieceAnim = (p: typeof PIECES[number]) => {
     if (logoState === "breaking" || logoState === "broken")
       return `break-${p.id} ${p.breakDur}s ease-in ${p.breakDelay}s both`;
@@ -154,11 +206,11 @@ function AnimatedLogo({
   };
 
   return (
+    // Outer wrapper — position:relative so we can absolutely-place the hint inside it
     <div style={{ position: "relative", display: "inline-block" }}>
-      {/* Inject per-piece keyframes */}
       <style>{PIECE_KEYFRAMES}</style>
 
-      {/* ── Original logo (idle only) ──────────────────────────────────── */}
+      {/* ── Idle logo (draw animation) ─────────────────────────────────────── */}
       {!showPieces && (
         <div
           onDoubleClick={onDoubleClick}
@@ -214,11 +266,8 @@ function AnimatedLogo({
         </div>
       )}
 
-      {/* ── Pieces layer (breaking / broken / assembling) ──────────────── */}
+      {/* ── Pieces layer (breaking / broken / assembling) ──────────────────── */}
       {showPieces && (
-        // Container matches the logo bounds exactly; overflow:visible lets
-        // pieces render below (pile zone). Pointer-events on pieces are off
-        // so clicks reach the dedicated pile click target below.
         <div style={{ position: "relative", width: logoW, aspectRatio: "324.26 / 311.61" }}>
           {PIECES.map(piece => (
             <div
@@ -237,40 +286,49 @@ function AnimatedLogo({
             </div>
           ))}
 
-          {/* ── Pile click target — sits at the pile location (below logo) ── */}
-          {/* Positioned at top:78% (≈164 px) with height 55px → covers 164–219 px.
-              The pile visual is ≈160–230 px from container top, text at ≈251 px. */}
+          {/* Invisible pile click zone — covers the landing area (70-100% of container).
+              zIndex:100 ensures it renders above animated pieces. */}
           <div
             onClick={logoState === "broken" ? onPileClick : undefined}
             style={{
               position: "absolute",
-              top: "78%",
-              left: "10%",
-              width: "80%",
-              height: "55px",
+              top: "68%",
+              left: 0,
+              width: "100%",
+              height: "120px",
               cursor: logoState === "broken" ? "pointer" : "default",
-              zIndex: 10,
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "center",
-              paddingBottom: "4px",
+              zIndex: 100,
             }}
-          >
-            {/* Restore hint — fades in after all pieces have landed (~3.5 s) */}
-            {logoState === "broken" && (
-              <span style={{
-                fontFamily: "'Share Tech Mono', monospace",
-                fontSize: "0.44rem",
-                letterSpacing: "0.22em",
-                color: "rgba(224,224,224,0.25)",
-                whiteSpace: "nowrap",
-                pointerEvents: "none",
-                animation: "alFadeIn 0.5s ease 0.3s both",
-              }}>
-                ↑ CLICK TO RESTORE
-              </span>
-            )}
-          </div>
+          />
+        </div>
+      )}
+
+      {/* ── CLICK TO RESTORE hint — outside pieces container at high z-index ── */}
+      {/* Rendered at top:44% of the outer wrapper = ~93px from container top.
+          Pile visually lands at ~175px from container top → hint is ~82px above pile. */}
+      {logoState === "broken" && (
+        <div
+          style={{
+            position: "absolute",
+            top: "44%",
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            zIndex: 200,
+            pointerEvents: "none",
+            animation: "alFadeIn 0.6s ease 0.4s both",
+          }}
+        >
+          <span style={{
+            fontFamily: "'Share Tech Mono', monospace",
+            fontSize: "0.44rem",
+            letterSpacing: "0.22em",
+            color: "rgba(224,224,224,0.45)",
+            whiteSpace: "nowrap",
+          }}>
+            ↓ CLICK PILE TO RESTORE
+          </span>
         </div>
       )}
     </div>
@@ -318,15 +376,15 @@ export default function AboutPage() {
   const handleLogoBreak = () => {
     if (logoState !== "idle") return;
     setLogoState("breaking");
-    // Last piece lands at 3.0 + 0.36 = 3.36 s → switch to broken at 3.55 s
-    logoTimerRef.current = setTimeout(() => setLogoState("broken"), 3550);
+    // Last piece (lp5) lands at 3.00 + 0.20 = 3.20 s → broken at 3.4 s
+    logoTimerRef.current = setTimeout(() => setLogoState("broken"), 3400);
   };
 
   const handleLogoAssemble = () => {
     if (logoState !== "broken") return;
     setLogoState("assembling");
-    // Last piece finishes at asmDelay 0.70 + asmDur 0.85 = 1.55 s → idle at 1.75 s
-    logoTimerRef.current = setTimeout(() => setLogoState("idle"), 1750);
+    // Last piece (lp1) finishes at 0.66 + 0.82 = 1.48 s → idle at 1.65 s
+    logoTimerRef.current = setTimeout(() => setLogoState("idle"), 1650);
   };
 
   return (
@@ -417,7 +475,7 @@ export default function AboutPage() {
             onPileClick={handleLogoAssemble}
           />
 
-          {/* Text pointer-events off when broken so it doesn't block pile clicks */}
+          {/* Text pointer-events off when broken so pile clicks pass through */}
           <p style={{
             fontFamily:"Share Tech Mono,monospace", fontSize:"0.62rem",
             letterSpacing:"0.28em", color:"rgba(224,224,224,0.28)", marginTop:"2.5rem",
@@ -579,9 +637,9 @@ export default function AboutPage() {
                 <rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/>
                 <circle cx="17.5" cy="6.5" r="1" fill="var(--accent)" stroke="none"/>
               </svg>
-              <span style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.65rem", letterSpacing:"0.18em", color:"var(--silver)" }}>@NK_DESIGNS</span>
+              <span style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.65rem", letterSpacing:"0.18em", color:"var(--silver)" }}>@NIKOS__KA</span>
             </div>
-            <a href="https://instagram.com/NK_Designs" target="_blank" rel="noopener noreferrer" style={{ fontFamily:"Syncopate,sans-serif", fontSize:"0.55rem", letterSpacing:"0.14em", color:"var(--accent)", textDecoration:"none", border:"1px solid rgba(255,60,0,0.35)", padding:"0.45rem 1rem" }}>FOLLOW ↗</a>
+            <a href="https://www.instagram.com/nikos__ka?igsh=d2o0NTkwczFud2l2" target="_blank" rel="noopener noreferrer" style={{ fontFamily:"Syncopate,sans-serif", fontSize:"0.55rem", letterSpacing:"0.14em", color:"var(--accent)", textDecoration:"none", border:"1px solid rgba(255,60,0,0.35)", padding:"0.45rem 1rem" }}>FOLLOW ↗</a>
           </div>
           <div className="ig-grid">
             {Array.from({length:6}).map((_,i) => (
@@ -606,7 +664,7 @@ export default function AboutPage() {
         <footer style={{ padding:"2rem clamp(1.5rem,6vw,6rem)", borderTop:"1px solid rgba(224,224,224,0.06)", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"1rem" }}>
           <div style={{ display:"flex", gap:"2rem", flexWrap:"wrap" }}>
             <a href="https://linkedin.com/in/kontalis-nikos" target="_blank" rel="noopener noreferrer" style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.58rem", color:"rgba(224,224,224,0.3)", letterSpacing:"0.1em", textDecoration:"none" }}>LINKEDIN ↗</a>
-            <a href="https://instagram.com/NK_Designs" target="_blank" rel="noopener noreferrer" style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.58rem", color:"rgba(224,224,224,0.3)", letterSpacing:"0.1em", textDecoration:"none" }}>INSTAGRAM ↗</a>
+            <a href="https://www.instagram.com/nikos__ka?igsh=d2o0NTkwczFud2l2" target="_blank" rel="noopener noreferrer" style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.58rem", color:"rgba(224,224,224,0.3)", letterSpacing:"0.1em", textDecoration:"none" }}>INSTAGRAM ↗</a>
           </div>
           <Link href="/" style={{ fontFamily:"Syncopate,sans-serif", fontSize:"0.55rem", letterSpacing:"0.12em", color:"var(--accent)", textDecoration:"none" }}>
             BACK TO HOME ↑
