@@ -52,66 +52,70 @@ const experience = [
 function AnimatedLogo({ trigger }: { trigger: boolean }) {
   return (
     <svg
-      viewBox="0 0 200 200"
+      viewBox="0 0 324.26 311.61"
       xmlns="http://www.w3.org/2000/svg"
       style={{ width: "clamp(100px,16vw,220px)", height: "auto", overflow: "visible" }}
       aria-label="Nikolaos Kalaitzidis logo"
     >
       <defs>
-        {/*
-          Gradient: solid silver at top → near-black at bottom.
-          On the dark bg this makes the triangle bright at apex,
-          fading into the bg at the base — matching the original PNG feel.
-        */}
-        <linearGradient id="aboutTriGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="#c8c8c8" />
-          <stop offset="100%" stopColor="#111111" />
+        {/* Exact gradient from Illustrator file */}
+        <linearGradient id="alGrad" x1="142.73" y1="251.49" x2="205.05" y2="159.09" gradientUnits="userSpaceOnUse">
+          <stop offset="0"    stopColor="#fff"    stopOpacity="1"   />
+          <stop offset=".2"   stopColor="#fcfcfc" stopOpacity=".99" />
+          <stop offset=".33"  stopColor="#f4f4f4" stopOpacity=".95" />
+          <stop offset=".45"  stopColor="#e7e7e7" stopOpacity=".89" />
+          <stop offset=".55"  stopColor="#d5d4d4" stopOpacity=".81" />
+          <stop offset=".65"  stopColor="#bdbbbc" stopOpacity=".7"  />
+          <stop offset=".74"  stopColor="#9f9d9e" stopOpacity=".57" />
+          <stop offset=".83"  stopColor="#7c7a7a" stopOpacity=".41" />
+          <stop offset=".91"  stopColor="#535051" stopOpacity=".22" />
+          <stop offset=".99"  stopColor="#272324" stopOpacity=".02" />
+          <stop offset="1"    stopColor="#231f20" stopOpacity="0"   />
         </linearGradient>
 
         <style>{`
           .al-line { stroke-dasharray: 1; stroke-dashoffset: 1; fill: none; }
           .al-tri  { opacity: 0; }
           ${trigger ? `
-            .al-l1  { animation: alDraw 1.1s cubic-bezier(0.16,1,0.3,1) 0.05s forwards; }
-            .al-l2  { animation: alDraw 1.1s cubic-bezier(0.16,1,0.3,1) 0.18s forwards; }
-            .al-l3  { animation: alDraw 0.85s cubic-bezier(0.16,1,0.3,1) 0.6s  forwards; }
-            .al-tri { animation: alFade 0.9s  ease                       0.95s forwards; }
+            /* Poles draw first, top → bottom */
+            .al-p1  { animation: alDraw 1.2s cubic-bezier(0.16,1,0.3,1) 0.05s forwards; }
+            .al-p2  { animation: alDraw 1.0s cubic-bezier(0.16,1,0.3,1) 0.15s forwards; }
+            /* Horizontal bar segments extend after poles */
+            .al-b1  { animation: alDraw 0.7s cubic-bezier(0.16,1,0.3,1) 0.75s forwards; }
+            .al-b2  { animation: alDraw 0.7s cubic-bezier(0.16,1,0.3,1) 0.75s forwards; }
+            /* Triangle fades in last */
+            .al-tri { animation: alFade 0.9s ease 1.1s forwards; }
             @keyframes alDraw { to { stroke-dashoffset: 0; } }
             @keyframes alFade { to { opacity: 1; }           }
           ` : ""}
         `}</style>
       </defs>
 
-      {/*
-        Pole coordinates measured from the original PNG (713×713 px → 200×200 vb):
-          Left pole  bottom: (14%, 97%) → (28, 194)   top: (67%, 6%) → (134, 12)
-          Right pole bottom: (86%, 97%) → (172, 194)  top: (33%, 6%) → (66,  12)
-          Crossing at (100, 70) — this is also the triangle apex.
-          Horizontal bar at y=131 (65% height), x 4%→96% → (8, 131)→(192, 131)
-          Triangle base: (36%, 65%)→(64%, 65%) → (72, 131)→(128, 131)
-      */}
+      {/* Left pole — thicker (5px), draws from top-right → bottom-left */}
+      <line className="al-line al-p1" pathLength="1"
+        x1="203.23" y1="1.08" x2="54.64" y2="310.53"
+        stroke="#fff" strokeWidth="5" strokeMiterlimit="10" />
 
-      {/* Left diagonal pole */}
-      <line className="al-line al-l1" pathLength="1"
-        x1="28"  y1="194"  x2="134" y2="12"
-        stroke="white" strokeWidth="2.2" strokeLinecap="square" />
+      {/* Right pole — thinner (4px), draws from top-center → bottom-right */}
+      <line className="al-line al-p2" pathLength="1"
+        x1="136.85" y1="22.02" x2="237.45" y2="235.98"
+        stroke="#fff" strokeWidth="4" strokeMiterlimit="10" />
 
-      {/* Right diagonal pole */}
-      <line className="al-line al-l2" pathLength="1"
-        x1="172" y1="194"  x2="66"  y2="12"
-        stroke="white" strokeWidth="2.2" strokeLinecap="square" />
+      {/* Left horizontal bar segment — extends left from triangle gap */}
+      <path className="al-line al-b1" pathLength="1"
+        d="M126.29,211.47H0"
+        stroke="#fff" strokeWidth="6" strokeMiterlimit="10" />
 
-      {/* Horizontal bar — wide, same weight as poles */}
-      <line className="al-line al-l3" pathLength="1"
-        x1="8"   y1="131"  x2="192" y2="131"
-        stroke="white" strokeWidth="2.2" strokeLinecap="square" />
+      {/* Right horizontal bar segment — extends right from triangle gap */}
+      <path className="al-line al-b2" pathLength="1"
+        d="M203.23,211.47h121.02"
+        stroke="#fff" strokeWidth="6" strokeMiterlimit="10" />
 
-      {/* Inner triangle — apex at crossing point, base on horizontal bar */}
+      {/* Triangle — exact points from Illustrator, fades in last */}
       <polygon className="al-tri"
-        points="100,70 72,131 128,131"
-        fill="url(#aboutTriGrad)"
-        stroke="rgba(255,255,255,0.25)"
-        strokeWidth="1" />
+        points="164.6,131.8 115.79,233.31 213.85,233.31"
+        fill="url(#alGrad)"
+        stroke="#fff" strokeWidth="3" strokeMiterlimit="10" />
     </svg>
   );
 }
