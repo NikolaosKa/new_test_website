@@ -45,89 +45,202 @@ const experience = [
   },
 ];
 
-// ── Animated SVG logo ─────────────────────────────────────────────────────────
-// Recreates the PNG logo with stroke-dashoffset draw animation on mount.
-// pathLength="1" lets us use dasharray/dashoffset values of 0–1 regardless of
-// actual geometry, so no path-length math needed.
-function AnimatedLogo({ trigger }: { trigger: boolean }) {
-  return (
-    <div style={{
-      display: "inline-flex",
-      animation: trigger ? "alBreathe 4s ease-in-out 2s infinite" : "none",
-    }}>
-    <svg
-      viewBox="0 0 324.26 311.61"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{ width: "clamp(100px,16vw,220px)", height: "auto", overflow: "visible" }}
-      aria-label="Nikolaos Kalaitzidis logo"
-    >
+// ── Logo break / assemble animation ──────────────────────────────────────────
+// The logo is split into 9 pieces (3 segments per pole + 2 bar halves + triangle).
+// On double-click each piece falls independently to the floor (top of the
+// subtitle text). On click-the-pile every piece springs back into place.
+//
+// All fall/scatter values are in CSS px at ~220px logo height.
+// transformOrigin is expressed as % of the containing div so rotation
+// happens around each piece's own visual centre.
+
+type LogoState = "idle" | "breaking" | "broken" | "assembling";
+
+const PIECES = [
+  // Left pole — 3 segments (top → bottom, breaks first → last)
+  { id:"lp1", fallY:222, fallX:-13, rot:-22, breakDelay:0.00, asmDelay:0.32, origin:"55% 17%" },
+  { id:"lp2", fallY:138, fallX:  9, rot: 14, breakDelay:0.07, asmDelay:0.19, origin:"40% 50%" },
+  { id:"lp3", fallY: 88, fallX: -6, rot: -9, breakDelay:0.14, asmDelay:0.00, origin:"25% 83%" },
+  // Right pole — 3 segments
+  { id:"rp1", fallY:215, fallX: 19, rot: 26, breakDelay:0.03, asmDelay:0.36, origin:"47% 18%" },
+  { id:"rp2", fallY:168, fallX:-11, rot:-17, breakDelay:0.10, asmDelay:0.23, origin:"58% 41%" },
+  { id:"rp3", fallY:120, fallX: 15, rot: 11, breakDelay:0.18, asmDelay:0.13, origin:"68% 64%" },
+  // Horizontal bar halves
+  { id:"lb",  fallY:110, fallX:-21, rot: -6, breakDelay:0.22, asmDelay:0.06, origin:"20% 68%" },
+  { id:"rb",  fallY:110, fallX: 15, rot:  7, breakDelay:0.26, asmDelay:0.09, origin:"81% 68%" },
+  // Triangle
+  { id:"tri", fallY:132, fallX:  3, rot: -4, breakDelay:0.16, asmDelay:0.06, origin:"51% 64%" },
+] as const;
+
+// SVG content rendered inside each piece's own viewBox-matched SVG
+function PieceContent({ id }: { id: string }) {
+  const sm = { strokeMiterlimit: 10 } as const;
+  if (id === "lp1") return <line {...sm} x1="203.23" y1="1.08"   x2="153.70" y2="104.23" stroke="#fff" strokeWidth="5" />;
+  if (id === "lp2") return <line {...sm} x1="153.70" y1="104.23" x2="104.17" y2="207.38" stroke="#fff" strokeWidth="5" />;
+  if (id === "lp3") return <line {...sm} x1="104.17" y1="207.38" x2="54.64"  y2="310.53" stroke="#fff" strokeWidth="5" />;
+  if (id === "rp1") return <line {...sm} x1="136.85" y1="22.02"  x2="170.38" y2="93.34"  stroke="#fff" strokeWidth="4" />;
+  if (id === "rp2") return <line {...sm} x1="170.38" y1="93.34"  x2="203.91" y2="164.66" stroke="#fff" strokeWidth="4" />;
+  if (id === "rp3") return <line {...sm} x1="203.91" y1="164.66" x2="237.45" y2="235.98" stroke="#fff" strokeWidth="4" />;
+  if (id === "lb")  return <path {...sm} d="M126.29,211.47H0"        stroke="#fff" strokeWidth="6" fill="none" />;
+  if (id === "rb")  return <path {...sm} d="M203.23,211.47h121.02"   stroke="#fff" strokeWidth="6" fill="none" />;
+  if (id === "tri") return (
+    <>
       <defs>
-        {/* Exact gradient from Illustrator file */}
-        <linearGradient id="alGrad" x1="142.73" y1="251.49" x2="205.05" y2="159.09" gradientUnits="userSpaceOnUse">
-          <stop offset="0"    stopColor="#fff"    stopOpacity="1"   />
-          <stop offset=".2"   stopColor="#fcfcfc" stopOpacity=".99" />
-          <stop offset=".33"  stopColor="#f4f4f4" stopOpacity=".95" />
-          <stop offset=".45"  stopColor="#e7e7e7" stopOpacity=".89" />
-          <stop offset=".55"  stopColor="#d5d4d4" stopOpacity=".81" />
-          <stop offset=".65"  stopColor="#bdbbbc" stopOpacity=".7"  />
-          <stop offset=".74"  stopColor="#9f9d9e" stopOpacity=".57" />
-          <stop offset=".83"  stopColor="#7c7a7a" stopOpacity=".41" />
-          <stop offset=".91"  stopColor="#535051" stopOpacity=".22" />
-          <stop offset=".99"  stopColor="#272324" stopOpacity=".02" />
-          <stop offset="1"    stopColor="#231f20" stopOpacity="0"   />
+        <linearGradient id="triGradP" x1="142.73" y1="251.49" x2="205.05" y2="159.09" gradientUnits="userSpaceOnUse">
+          <stop offset="0"   stopColor="#fff"    stopOpacity="1"  />
+          <stop offset=".2"  stopColor="#fcfcfc" stopOpacity=".99"/>
+          <stop offset=".33" stopColor="#f4f4f4" stopOpacity=".95"/>
+          <stop offset=".45" stopColor="#e7e7e7" stopOpacity=".89"/>
+          <stop offset=".55" stopColor="#d5d4d4" stopOpacity=".81"/>
+          <stop offset=".65" stopColor="#bdbbbc" stopOpacity=".7" />
+          <stop offset=".74" stopColor="#9f9d9e" stopOpacity=".57"/>
+          <stop offset=".83" stopColor="#7c7a7a" stopOpacity=".41"/>
+          <stop offset=".91" stopColor="#535051" stopOpacity=".22"/>
+          <stop offset=".99" stopColor="#272324" stopOpacity=".02"/>
+          <stop offset="1"   stopColor="#231f20" stopOpacity="0" />
         </linearGradient>
-
-        <style>{`
-          .al-line { stroke-dasharray: 1; stroke-dashoffset: 1; fill: none; }
-          .al-tri  { opacity: 0; }
-          ${trigger ? `
-            /* Poles draw first, top → bottom */
-            .al-p1  { animation: alDraw 1.2s cubic-bezier(0.16,1,0.3,1) 0.05s forwards; }
-            .al-p2  { animation: alDraw 1.0s cubic-bezier(0.16,1,0.3,1) 0.15s forwards; }
-            /* Horizontal bar segments extend after poles */
-            .al-b1  { animation: alDraw 0.7s cubic-bezier(0.16,1,0.3,1) 0.75s forwards; }
-            .al-b2  { animation: alDraw 0.7s cubic-bezier(0.16,1,0.3,1) 0.75s forwards; }
-            /* Triangle fades in last */
-            .al-tri { animation: alFade 0.9s ease 1.1s forwards; }
-            @keyframes alDraw    { to { stroke-dashoffset: 0; } }
-            @keyframes alFade    { to { opacity: 1; }           }
-          ` : ""}
-          @keyframes alBreathe {
-            0%, 100% { transform: scale(1);     }
-            50%       { transform: scale(1.045); }
-          }
-        `}</style>
       </defs>
+      <polygon {...sm} points="164.6,131.8 115.79,233.31 213.85,233.31"
+        fill="url(#triGradP)" stroke="#fff" strokeWidth="3" />
+    </>
+  );
+  return null;
+}
 
-      {/* Left pole — thicker (5px), draws from top-right → bottom-left */}
-      <line className="al-line al-p1" pathLength="1"
-        x1="203.23" y1="1.08" x2="54.64" y2="310.53"
-        stroke="#fff" strokeWidth="5" strokeMiterlimit="10" />
+// ── AnimatedLogo ──────────────────────────────────────────────────────────────
+function AnimatedLogo({
+  trigger,
+  logoState,
+  onDoubleClick,
+  onPileClick,
+}: {
+  trigger: boolean;
+  logoState: LogoState;
+  onDoubleClick: () => void;
+  onPileClick: () => void;
+}) {
+  const showPieces = logoState !== "idle";
+  const atFloor    = logoState === "breaking" || logoState === "broken";
+  const logoW      = "clamp(100px,16vw,220px)";
 
-      {/* Right pole — thinner (4px), draws from top-center → bottom-right */}
-      <line className="al-line al-p2" pathLength="1"
-        x1="136.85" y1="22.02" x2="237.45" y2="235.98"
-        stroke="#fff" strokeWidth="4" strokeMiterlimit="10" />
+  return (
+    <div style={{ position: "relative", display: "inline-block" }}>
 
-      {/* Left horizontal bar segment — extends left from triangle gap */}
-      <path className="al-line al-b1" pathLength="1"
-        d="M126.29,211.47H0"
-        stroke="#fff" strokeWidth="6" strokeMiterlimit="10" />
+      {/* ── Original logo (idle only) ────────────────────────────────────── */}
+      {!showPieces && (
+        <div
+          onDoubleClick={onDoubleClick}
+          style={{
+            cursor: "crosshair",
+            animation: trigger ? "alBreathe 4s ease-in-out 2s infinite" : "none",
+          }}
+        >
+          <svg
+            viewBox="0 0 324.26 311.61"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ width: logoW, height: "auto", overflow: "visible" }}
+            aria-label="Nikolaos Kalaitzidis logo"
+          >
+            <defs>
+              <linearGradient id="alGrad" x1="142.73" y1="251.49" x2="205.05" y2="159.09" gradientUnits="userSpaceOnUse">
+                <stop offset="0"   stopColor="#fff"    stopOpacity="1"  />
+                <stop offset=".2"  stopColor="#fcfcfc" stopOpacity=".99"/>
+                <stop offset=".33" stopColor="#f4f4f4" stopOpacity=".95"/>
+                <stop offset=".45" stopColor="#e7e7e7" stopOpacity=".89"/>
+                <stop offset=".55" stopColor="#d5d4d4" stopOpacity=".81"/>
+                <stop offset=".65" stopColor="#bdbbbc" stopOpacity=".7" />
+                <stop offset=".74" stopColor="#9f9d9e" stopOpacity=".57"/>
+                <stop offset=".83" stopColor="#7c7a7a" stopOpacity=".41"/>
+                <stop offset=".91" stopColor="#535051" stopOpacity=".22"/>
+                <stop offset=".99" stopColor="#272324" stopOpacity=".02"/>
+                <stop offset="1"   stopColor="#231f20" stopOpacity="0" />
+              </linearGradient>
+              <style>{`
+                .al-line { stroke-dasharray:1; stroke-dashoffset:1; fill:none; }
+                .al-tri  { opacity:0; }
+                ${trigger ? `
+                  .al-p1 { animation: alDraw 1.2s cubic-bezier(0.16,1,0.3,1) 0.05s forwards; }
+                  .al-p2 { animation: alDraw 1.0s cubic-bezier(0.16,1,0.3,1) 0.15s forwards; }
+                  .al-b1 { animation: alDraw 0.7s cubic-bezier(0.16,1,0.3,1) 0.75s forwards; }
+                  .al-b2 { animation: alDraw 0.7s cubic-bezier(0.16,1,0.3,1) 0.75s forwards; }
+                  .al-tri{ animation: alFade 0.9s ease 1.1s forwards; }
+                  @keyframes alDraw { to { stroke-dashoffset:0; } }
+                  @keyframes alFade { to { opacity:1; } }
+                ` : ""}
+                @keyframes alBreathe {
+                  0%,100% { transform:scale(1);     }
+                  50%     { transform:scale(1.045); }
+                }
+              `}</style>
+            </defs>
+            <line className="al-line al-p1" pathLength="1" x1="203.23" y1="1.08"  x2="54.64"  y2="310.53" stroke="#fff" strokeWidth="5" strokeMiterlimit="10"/>
+            <line className="al-line al-p2" pathLength="1" x1="136.85" y1="22.02" x2="237.45" y2="235.98" stroke="#fff" strokeWidth="4" strokeMiterlimit="10"/>
+            <path className="al-line al-b1" pathLength="1" d="M126.29,211.47H0"        stroke="#fff" strokeWidth="6" strokeMiterlimit="10"/>
+            <path className="al-line al-b2" pathLength="1" d="M203.23,211.47h121.02"   stroke="#fff" strokeWidth="6" strokeMiterlimit="10"/>
+            <polygon className="al-tri" points="164.6,131.8 115.79,233.31 213.85,233.31"
+              fill="url(#alGrad)" stroke="#fff" strokeWidth="3" strokeMiterlimit="10"/>
+          </svg>
+        </div>
+      )}
 
-      {/* Right horizontal bar segment — extends right from triangle gap */}
-      <path className="al-line al-b2" pathLength="1"
-        d="M203.23,211.47h121.02"
-        stroke="#fff" strokeWidth="6" strokeMiterlimit="10" />
+      {/* ── Pieces layer (breaking / broken / assembling) ────────────────── */}
+      {showPieces && (
+        <div
+          onClick={logoState === "broken" ? onPileClick : undefined}
+          style={{
+            position: "relative",
+            width: logoW,
+            aspectRatio: "324.26 / 311.61",
+            cursor: logoState === "broken" ? "pointer" : "default",
+          }}
+        >
+          {PIECES.map(piece => (
+            <div
+              key={piece.id}
+              style={{
+                position: "absolute",
+                inset: 0,
+                pointerEvents: "none",
+                transformOrigin: piece.origin,
+                transform: atFloor
+                  ? `translateY(${piece.fallY}px) translateX(${piece.fallX}px) rotate(${piece.rot}deg)`
+                  : "translateY(0px) translateX(0px) rotate(0deg)",
+                transition: atFloor
+                  ? `transform 0.48s cubic-bezier(0.3,0,0.85,0.7) ${piece.breakDelay}s`
+                  : `transform 0.8s cubic-bezier(0.16,1,0.3,1) ${piece.asmDelay}s`,
+              }}
+            >
+              <svg viewBox="0 0 324.26 311.61" style={{ width:"100%", height:"100%" }} overflow="visible">
+                <PieceContent id={piece.id} />
+              </svg>
+            </div>
+          ))}
 
-      {/* Triangle — exact points from Illustrator, fades in last */}
-      <polygon className="al-tri"
-        points="164.6,131.8 115.79,233.31 213.85,233.31"
-        fill="url(#alGrad)"
-        stroke="#fff" strokeWidth="3" strokeMiterlimit="10" />
-    </svg>
+          {/* Restore hint fades in after pieces settle */}
+          {logoState === "broken" && (
+            <div style={{
+              position: "absolute",
+              top: "calc(100% + 68px)",
+              left: "50%",
+              transform: "translateX(-50%)",
+              fontFamily: "'Share Tech Mono', monospace",
+              fontSize: "0.48rem",
+              letterSpacing: "0.22em",
+              color: "rgba(224,224,224,0.22)",
+              whiteSpace: "nowrap",
+              pointerEvents: "none",
+              animation: "alFadeIn 0.6s ease 0.5s both",
+            }}>
+              ↑ CLICK TO RESTORE
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const droneImages = [
   "/Drone/01_Images/DJI_0239.webp",
@@ -137,24 +250,21 @@ const droneImages = [
 ];
 
 export default function AboutPage() {
-  const skillsRef    = useRef<HTMLDivElement>(null);
-  // Two-phase: first enable transitions, then (next frame) set the fill value.
-  // This guarantees the browser sees the transition before the transform changes.
-  const [skillsReady, setSkillsReady] = useState(false); // transition enabled
-  const [skillsFill,  setSkillsFill]  = useState(false); // transform applied
+  const skillsRef = useRef<HTMLDivElement>(null);
+  const [skillsReady, setSkillsReady] = useState(false);
+  const [skillsFill,  setSkillsFill]  = useState(false);
   const [mounted,     setMounted]     = useState(false);
+  const [logoState,   setLogoState]   = useState<LogoState>("idle");
+  const logoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setMounted(true);
 
     const obs = new IntersectionObserver(
       ([entry]) => {
-        // Only fire when scrolling INTO view from below (not on initial load)
         if (entry.isIntersecting && entry.boundingClientRect.top > 0) {
           obs.disconnect();
-          // Phase 1: enable transition (no visual change yet — bars still at 0)
           setSkillsReady(true);
-          // Phase 2: one rAF later, change the transform → animation plays
           requestAnimationFrame(() => {
             requestAnimationFrame(() => setSkillsFill(true));
           });
@@ -164,8 +274,24 @@ export default function AboutPage() {
     );
 
     if (skillsRef.current) obs.observe(skillsRef.current);
-    return () => obs.disconnect();
+    return () => {
+      obs.disconnect();
+      if (logoTimerRef.current) clearTimeout(logoTimerRef.current);
+    };
   }, []);
+
+  const handleLogoBreak = () => {
+    if (logoState !== "idle") return;
+    setLogoState("breaking");
+    logoTimerRef.current = setTimeout(() => setLogoState("broken"), 900);
+  };
+
+  const handleLogoAssemble = () => {
+    if (logoState !== "broken") return;
+    setLogoState("assembling");
+    // Longest assemble delay + duration = 0.36 + 0.8 = 1.16s
+    logoTimerRef.current = setTimeout(() => setLogoState("idle"), 1250);
+  };
 
   return (
     <>
@@ -176,9 +302,9 @@ export default function AboutPage() {
         }
         .about-page.ready { opacity: 1; }
 
-        @keyframes breathe {
-          0%,100% { transform: scale(1);    opacity: 0.8; }
-          50%      { transform: scale(1.04); opacity: 1;   }
+        @keyframes alFadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
         }
         @keyframes flow {
           0%,100% { transform: scaleY(0); transform-origin: top;    }
@@ -269,22 +395,33 @@ export default function AboutPage() {
         </nav>
 
         {/* ── Logo hero ─────────────────────────────────────────────────────── */}
+        {/* overflow is NOT hidden so fallen pieces can render below the logo */}
         <section style={{
           minHeight: "100vh", display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center",
-          position: "relative", overflow: "hidden",
+          position: "relative",
         }}>
           <div style={{
             position: "absolute", inset: 0,
             background: "radial-gradient(ellipse 55% 45% at 50% 50%, rgba(255,60,0,0.05) 0%, transparent 70%)",
             pointerEvents: "none",
           }} />
-          <AnimatedLogo trigger={mounted} />
+
+          <AnimatedLogo
+            trigger={mounted}
+            logoState={logoState}
+            onDoubleClick={handleLogoBreak}
+            onPileClick={handleLogoAssemble}
+          />
+
           <p style={{
             fontFamily: "Share Tech Mono,monospace", fontSize: "0.62rem",
             letterSpacing: "0.28em", color: "rgba(224,224,224,0.28)",
             marginTop: "2.5rem",
+            // Pointer events off so clicks pass through to the pile when broken
+            pointerEvents: logoState === "broken" ? "none" : "auto",
           }}>ARCHITECTURAL STUDIO</p>
+
           <div style={{
             position: "absolute", bottom: "2.5rem", left: "50%", transform: "translateX(-50%)",
             display: "flex", flexDirection: "column", alignItems: "center", gap: "0.6rem",
@@ -297,7 +434,6 @@ export default function AboutPage() {
         {/* ── Bio ───────────────────────────────────────────────────────────── */}
         <section style={{ padding: "clamp(5rem,10vw,10rem) clamp(1.5rem,6vw,6rem)", maxWidth: "1400px", margin: "0 auto" }}>
           <div className="bio-grid">
-            {/* Photo */}
             <div style={{ position: "relative" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/profile.webp" alt="Nikolaos Kalaitzidis" style={{
@@ -308,7 +444,6 @@ export default function AboutPage() {
               <div style={{ position: "absolute", bottom: 0, left: 0, width: "3px", height: "28%", background: "var(--accent)" }} />
             </div>
 
-            {/* Text */}
             <div>
               <p style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.62rem", letterSpacing: "0.22em", color: "var(--accent)", marginBottom: "1.4rem" }}>
                 001 / ABOUT ME
@@ -333,7 +468,6 @@ export default function AboutPage() {
                 Graduated from the Technical University of Crete in Architectural Engineering. Extended my studies at TU Wien through Erasmus+, in collaboration with the AIT Advanced Institute of Technology and CIL City Intelligent Lab.
               </p>
 
-              {/* Stats */}
               <div style={{ marginTop: "3.5rem", display: "flex", gap: "3.5rem", flexWrap: "wrap" }}>
                 {[["6+", "YEARS EXP."], ["10+", "PROJECTS"], ["GR / EU", "BASED"]].map(([val, label]) => (
                   <div key={label}>
@@ -343,12 +477,11 @@ export default function AboutPage() {
                 ))}
               </div>
 
-              {/* Contact row */}
               <div style={{ marginTop: "2.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 {[
-                  ["EMAIL",   "nika-nikolaos@hotmail.com"],
-                  ["TEL",     "+30 693 959 8454"],
-                  ["BASED",   "Athens, Greece"],
+                  ["EMAIL", "nika-nikolaos@hotmail.com"],
+                  ["TEL",   "+30 693 959 8454"],
+                  ["BASED", "Athens, Greece"],
                 ].map(([label, val]) => (
                   <div key={label} style={{ display: "flex", gap: "1.2rem" }}>
                     <span style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.58rem", letterSpacing: "0.15em", color: "rgba(224,224,224,0.28)", minWidth: "52px" }}>{label}</span>
@@ -379,7 +512,6 @@ export default function AboutPage() {
           }}>
             SKILLS &amp;<br />TOOLS
           </h2>
-
           <div style={{ display: "flex", flexDirection: "column", gap: "2.4rem" }}>
             {skills.map(({ name, level }, i) => (
               <div key={name}>
@@ -435,7 +567,6 @@ export default function AboutPage() {
             ))}
           </div>
 
-          {/* Workshops / exhibitions row */}
           <div style={{ marginTop: "3rem", padding: "2rem", border: "1px solid rgba(224,224,224,0.06)" }}>
             <p style={{ fontFamily: "Share Tech Mono,monospace", fontSize: "0.58rem", letterSpacing: "0.2em", color: "rgba(224,224,224,0.28)", marginBottom: "1.4rem" }}>WORKSHOPS &amp; EXHIBITIONS</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -468,7 +599,7 @@ export default function AboutPage() {
           }}>
             OTHER<br />PURSUITS
           </h2>
-          {/* Photography — placeholders */}
+
           <div style={{ marginBottom: "4.5rem" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: "1.2rem", marginBottom: "1.5rem" }}>
               <span style={{ fontFamily: "Syncopate,sans-serif", fontSize: "0.75rem", fontWeight: 700, color: "var(--silver)", letterSpacing: "0.06em" }}>PHOTOGRAPHY</span>
@@ -490,7 +621,6 @@ export default function AboutPage() {
             </div>
           </div>
 
-          {/* Drone — real images */}
           <div style={{ marginBottom: "4.5rem" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: "1.2rem", marginBottom: "1.5rem" }}>
               <span style={{ fontFamily: "Syncopate,sans-serif", fontSize: "0.75rem", fontWeight: 700, color: "var(--silver)", letterSpacing: "0.06em" }}>DRONE VIDEOGRAPHY</span>
