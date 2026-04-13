@@ -5,23 +5,18 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
-const PDF_URL = "/projects/Old_Portfolio/Kalaitzidis%20Nikolaos%202025.pdf";
+// Portfolio images P1–P24
+const PORTFOLIO_IMAGES = Array.from({ length: 24 }, (_, i) => `/projects/Old_Portfolio/Images/P${i + 1}.jpg`);
 
 // Load Three.js scene client-side only (no SSR)
 const Hero3DScene = dynamic(() => import("./hero-3d-scene"), { ssr: false });
 
 export const HalideTopoHero = () => {
-  const [pdfOpen, setPdfOpen] = useState(false);
-
-  // Lock body scroll while overlay is open
-  useEffect(() => {
-    document.body.style.overflow = pdfOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [pdfOpen]);
+  const [carouselOpen, setCarouselOpen] = useState(false);
 
   // Close on Escape
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setPdfOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setCarouselOpen(false); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
@@ -186,7 +181,7 @@ export const HalideTopoHero = () => {
               href="#projects"
               className="cta-button"
               style={{ pointerEvents: "auto" }}
-              onClick={(e) => { e.preventDefault(); setPdfOpen(true); }}
+              onClick={(e) => { e.preventDefault(); setCarouselOpen(true); }}
             >
               VIEW PORTFOLIO
             </a>
@@ -197,108 +192,90 @@ export const HalideTopoHero = () => {
         <div className="scroll-hint" />
       </section>
 
-      {/* ── PDF Portfolio Overlay ─────────────────────────────────────────── */}
-      {pdfOpen && (
+      {/* ── Portfolio Image Carousel Overlay ──────────────────────────────── */}
+      {carouselOpen && (
         <>
           <style>{`
-            @keyframes pdfFadeIn  { from { opacity:0; } to { opacity:1; } }
-            @keyframes pdfSlideUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+            @keyframes carouselFadeIn { from { opacity: 0; } to { opacity: 1; } }
           `}</style>
 
-          {/* Backdrop — click outside PDF to close */}
+          {/* Scrollable full-screen overlay — sticky cards work inside a scroll container */}
           <div
-            onClick={() => setPdfOpen(false)}
             style={{
               position: "fixed",
               inset: 0,
               zIndex: 900,
-              background: "rgba(0,0,0,0.92)",
-              backdropFilter: "blur(4px)",
-              WebkitBackdropFilter: "blur(4px)",
-              animation: "pdfFadeIn 0.35s ease",
-            }}
-          />
-
-          {/* PDF frame — stops clicks from closing */}
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              zIndex: 901,
-              width: "min(860px, 88vw)",
-              height: "88vh",
-              display: "flex",
-              flexDirection: "column",
-              animation: "pdfSlideUp 0.4s cubic-bezier(0.16,1,0.3,1)",
+              overflowY: "scroll",
+              background: "#050505",
+              animation: "carouselFadeIn 0.4s ease",
             }}
           >
-            {/* Top bar */}
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "0.6rem",
-              paddingInline: "2px",
-            }}>
-              <span style={{
-                fontFamily: "'Share Tech Mono', monospace",
-                fontSize: "0.58rem",
-                letterSpacing: "0.2em",
-                color: "rgba(224,224,224,0.35)",
-              }}>
+            {/* Fixed UI chrome — close button + label */}
+            <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 910, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.2rem 2rem", background: "linear-gradient(to bottom, rgba(5,5,5,0.95) 0%, transparent 100%)", pointerEvents: "none" }}>
+              <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: "0.56rem", letterSpacing: "0.22em", color: "rgba(224,224,224,0.3)" }}>
                 KALAITZIDIS NIKOLAOS — PORTFOLIO 2025
               </span>
               <button
-                onClick={() => setPdfOpen(false)}
+                onClick={() => setCarouselOpen(false)}
                 style={{
+                  pointerEvents: "auto",
                   background: "none",
-                  border: "1px solid rgba(224,224,224,0.2)",
-                  color: "rgba(224,224,224,0.55)",
+                  border: "1px solid rgba(224,224,224,0.18)",
+                  color: "rgba(224,224,224,0.5)",
                   fontFamily: "'Share Tech Mono', monospace",
-                  fontSize: "0.58rem",
+                  fontSize: "0.56rem",
                   letterSpacing: "0.15em",
                   cursor: "pointer",
-                  padding: "0.3rem 0.75rem",
+                  padding: "0.35rem 0.8rem",
                   transition: "border-color 0.2s, color 0.2s",
                 }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,60,0,0.6)";
-                  (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(224,224,224,0.2)";
-                  (e.currentTarget as HTMLButtonElement).style.color = "rgba(224,224,224,0.55)";
-                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,60,0,0.6)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(224,224,224,0.18)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(224,224,224,0.5)"; }}
               >
                 CLOSE ×
               </button>
             </div>
 
-            {/* PDF iframe */}
-            <iframe
-              src={`${PDF_URL}#view=FitH`}
-              style={{
-                flex: 1,
-                border: "1px solid rgba(224,224,224,0.08)",
-                background: "#0a0a0a",
-              }}
-              title="Portfolio PDF"
-            />
+            {/* Sticky-scroll image stack */}
+            <div style={{ minHeight: `${PORTFOLIO_IMAGES.length * 100}vh` }}>
+              {PORTFOLIO_IMAGES.map((src, i) => (
+                <div
+                  key={i}
+                  style={{
+                    position: "sticky",
+                    top: 0,
+                    height: "100vh",
+                    zIndex: i + 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#050505",
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={src}
+                    alt={`Portfolio page ${i + 1}`}
+                    style={{
+                      maxWidth: "92vw",
+                      maxHeight: "88vh",
+                      objectFit: "contain",
+                      display: "block",
+                      boxShadow: "0 32px 80px rgba(0,0,0,0.7)",
+                    }}
+                  />
+                  {/* Page counter */}
+                  <div style={{ position: "absolute", bottom: "1.8rem", left: "50%", transform: "translateX(-50%)", fontFamily: "'Share Tech Mono', monospace", fontSize: "0.48rem", letterSpacing: "0.22em", color: "rgba(224,224,224,0.22)" }}>
+                    {String(i + 1).padStart(2, "0")} / {String(PORTFOLIO_IMAGES.length).padStart(2, "0")}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-            {/* Bottom hint */}
-            <p style={{
-              fontFamily: "'Share Tech Mono', monospace",
-              fontSize: "0.5rem",
-              letterSpacing: "0.18em",
-              color: "rgba(224,224,224,0.2)",
-              textAlign: "center",
-              marginTop: "0.5rem",
-            }}>
-              CLICK OUTSIDE TO CLOSE · SCROLL TO NAVIGATE PAGES · ESC TO EXIT
-            </p>
+            {/* Scroll hint at bottom of first viewport */}
+            <div style={{ position: "fixed", bottom: "2rem", left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem", zIndex: 910, pointerEvents: "none" }}>
+              <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: "0.44rem", letterSpacing: "0.2em", color: "rgba(224,224,224,0.18)" }}>SCROLL TO BROWSE · ESC TO EXIT</span>
+            </div>
           </div>
         </>
       )}

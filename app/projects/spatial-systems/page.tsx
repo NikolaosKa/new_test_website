@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect } from "react"
-import { motion, stagger, useAnimate } from "motion/react"
+import { useState } from "react"
+import { motion } from "motion/react"
 import Link from "next/link"
 import Floating, { FloatingElement } from "@/components/ui/parallax-floating"
 import { TextScramble } from "@/components/ui/text-scramble"
@@ -33,26 +33,69 @@ const details = [
 // Inline styles guarantee correct rendering regardless of Tailwind compilation.
 const layout = [
   // ── Top row ──────────────────────────────────────────────────────────────
-  { img: 0, depth: 1.2,  top: "3%",  left: "24%", w: "clamp(80px,8vw,130px)",  h: "clamp(80px,8vw,130px)" },
-  { img: 1, depth: 2.0,  top: "1%",  left: "52%", w: "clamp(70px,7vw,115px)",  h: "clamp(90px,10vw,150px)" },
-  { img: 2, depth: 0.8,  top: "4%",  left: "72%", w: "clamp(90px,9vw,145px)",  h: "clamp(65px,7vw,105px)" },
+  { img: 0, depth: 1.2,  top: "3%",  left: "18%", w: "clamp(130px,13vw,210px)",  h: "clamp(130px,13vw,210px)" },
+  { img: 1, depth: 2.0,  top: "1%",  left: "50%", w: "clamp(115px,11vw,180px)",  h: "clamp(145px,15vw,230px)" },
+  { img: 2, depth: 0.8,  top: "4%",  left: "72%", w: "clamp(145px,14vw,220px)",  h: "clamp(100px,10vw,160px)" },
   // ── Left side ────────────────────────────────────────────────────────────
-  { img: 3, depth: 1.5,  top: "32%", left: "3%",  w: "clamp(80px,8vw,130px)",  h: "clamp(110px,12vw,190px)" },
+  { img: 3, depth: 1.5,  top: "34%", left: "2%",  w: "clamp(130px,13vw,205px)",  h: "clamp(175px,18vw,285px)" },
   // ── Right side ───────────────────────────────────────────────────────────
-  { img: 4, depth: 0.6,  top: "30%", left: "82%", w: "clamp(85px,8.5vw,135px)", h: "clamp(110px,12vw,185px)" },
+  { img: 4, depth: 0.6,  top: "32%", left: "82%", w: "clamp(135px,13vw,210px)",  h: "clamp(175px,18vw,280px)" },
   // ── Bottom row ───────────────────────────────────────────────────────────
-  { img: 5, depth: 2.5,  top: "72%", left: "20%", w: "clamp(90px,9vw,145px)",  h: "clamp(65px,7vw,110px)" },
-  { img: 6, depth: 1.0,  top: "70%", left: "54%", w: "clamp(75px,7.5vw,120px)", h: "clamp(75px,7.5vw,120px)" },
-  { img: 7, depth: 1.8,  top: "68%", left: "77%", w: "clamp(80px,8vw,130px)",  h: "clamp(100px,10vw,165px)" },
+  { img: 5, depth: 2.5,  top: "72%", left: "16%", w: "clamp(145px,14vw,225px)",  h: "clamp(100px,10vw,165px)" },
+  { img: 6, depth: 1.0,  top: "70%", left: "50%", w: "clamp(120px,12vw,190px)",  h: "clamp(120px,12vw,190px)" },
+  { img: 7, depth: 1.8,  top: "68%", left: "75%", w: "clamp(130px,13vw,205px)",  h: "clamp(160px,16vw,255px)" },
 ]
 
+// Floating image with hover: zoom + caption overlay
+const FloatingImage = ({ src, fallback, alt, w, h }: { src: string; fallback: string; alt: string; w: string; h: string }) => {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      style={{ position: "relative", width: w, height: h, overflow: "hidden", cursor: "pointer" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        onError={(e) => { (e.currentTarget as HTMLImageElement).src = fallback; }}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          display: "block",
+          filter: "grayscale(0.2) contrast(1.08)",
+          transform: hovered ? "scale(1.18)" : "scale(1)",
+          transition: "transform 0.5s cubic-bezier(0.16,1,0.3,1)",
+        }}
+      />
+      <div style={{
+        position: "absolute",
+        inset: 0,
+        background: hovered ? "linear-gradient(to top, rgba(0,0,0,0.78) 0%, transparent 55%)" : "transparent",
+        transition: "background 0.35s ease",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-end",
+        padding: "0.55rem 0.65rem",
+      }}>
+        {hovered && (
+          <>
+            <p style={{ fontFamily: "Syncopate, sans-serif", fontSize: "0.42rem", letterSpacing: "0.12em", color: "#fff", marginBottom: "0.18rem", lineHeight: 1.2 }}>
+              SPATIAL SYSTEMS
+            </p>
+            <p style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: "0.38rem", letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)" }}>
+              2024 / ONGOING
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function SpatialSystemsPage() {
-  const [scope, animate] = useAnimate()
-
-  useEffect(() => {
-    animate("img", { opacity: [0, 1] }, { duration: 0.6, delay: stagger(0.1) })
-  }, [])
-
   return (
     <main style={{ background: "var(--bg)", color: "var(--silver)", minHeight: "100vh", fontFamily: "'Share Tech Mono', monospace" }}>
 
@@ -77,7 +120,7 @@ export default function SpatialSystemsPage() {
       </nav>
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <div ref={scope} style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", background: "#050505" }}>
+      <div style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", background: "#050505" }}>
 
         {/* Accent glow */}
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 55% 45% at 50% 52%, rgba(255,60,0,0.055) 0%, transparent 68%)", pointerEvents: "none", zIndex: 1 }} />
@@ -86,13 +129,9 @@ export default function SpatialSystemsPage() {
         <Floating sensitivity={-0.7} easingFactor={0.045}>
           {layout.map(({ img, depth, top, left, w, h }, i) => (
             <FloatingElement key={i} depth={depth} style={{ top, left }}>
-              <motion.img
-                initial={{ opacity: 0 }}
-                src={images[img].url}
-                alt={images[img].alt}
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = images[img].fallback; }}
-                style={{ width: w, height: h, objectFit: "cover", display: "block", filter: "grayscale(0.2) contrast(1.08)" }}
-              />
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: i * 0.08 }}>
+                <FloatingImage src={images[img].url} fallback={images[img].fallback} alt={images[img].alt} w={w} h={h} />
+              </motion.div>
             </FloatingElement>
           ))}
         </Floating>
@@ -116,12 +155,13 @@ export default function SpatialSystemsPage() {
             style={{
               fontFamily: "Syncopate, sans-serif", fontWeight: 700,
               fontSize: "clamp(1.4rem,2.8vw,2.8rem)",
-              lineHeight: 0.95, letterSpacing: "-0.01em",
+              lineHeight: 1.05, letterSpacing: "-0.01em",
               color: "var(--silver)",
               userSelect: "none",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: "0.15em",
             }}
           >
-            <TextScramble text="SPATIAL" style={{ display: "block" }} /><br />
+            <TextScramble text="SPATIAL" style={{ display: "block" }} />
             <TextScramble text="SYSTEMS" style={{ display: "block" }} />
           </motion.h1>
 
