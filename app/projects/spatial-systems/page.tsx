@@ -7,19 +7,18 @@ import Floating, { FloatingElement } from "@/components/ui/parallax-floating"
 import { TextScramble } from "@/components/ui/text-scramble"
 
 // ── Cover images ──────────────────────────────────────────────────────────────
-// SOURCE RULE: always pull from /projects/Project_XX/06_Cover_Images/
-// Add files named 01.jpg, 02.jpg … to that folder and update the urls below.
-// Until images are added, Unsplash placeholders are used.
-const COVER_BASE = "/projects/Project_01/06_Cover_Images"
+// SOURCE RULE: replace these with /projects/Project_01/06_Cover_Images/01.jpg etc.
+// when cover images are added to that folder.
+const PORTFOLIO_BASE = "/projects/Old_Portfolio/Images"
 const images = [
-  { url: `${COVER_BASE}/01.jpg`, fallback: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 01" },
-  { url: `${COVER_BASE}/02.jpg`, fallback: "https://images.unsplash.com/photo-1431576901776-e539bd916ba2?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 02" },
-  { url: `${COVER_BASE}/03.jpg`, fallback: "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 03" },
-  { url: `${COVER_BASE}/04.jpg`, fallback: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 04" },
-  { url: `${COVER_BASE}/05.jpg`, fallback: "https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 05" },
-  { url: `${COVER_BASE}/06.jpg`, fallback: "https://images.unsplash.com/photo-1524230572899-a752b3835840?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 06" },
-  { url: `${COVER_BASE}/07.jpg`, fallback: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 07" },
-  { url: `${COVER_BASE}/08.jpg`, fallback: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 08" },
+  { url: `${PORTFOLIO_BASE}/P3.jpg`,  alt: "Spatial study 01" },
+  { url: `${PORTFOLIO_BASE}/P6.jpg`,  alt: "Spatial study 02" },
+  { url: `${PORTFOLIO_BASE}/P9.jpg`,  alt: "Spatial study 03" },
+  { url: `${PORTFOLIO_BASE}/P12.jpg`, alt: "Spatial study 04" },
+  { url: `${PORTFOLIO_BASE}/P15.jpg`, alt: "Spatial study 05" },
+  { url: `${PORTFOLIO_BASE}/P18.jpg`, alt: "Spatial study 06" },
+  { url: `${PORTFOLIO_BASE}/P21.jpg`, alt: "Spatial study 07" },
+  { url: `${PORTFOLIO_BASE}/P24.jpg`, alt: "Spatial study 08" },
 ]
 
 const details = [
@@ -47,7 +46,7 @@ const layout = [
 ]
 
 // Floating image with hover: zoom + caption overlay
-const FloatingImage = ({ src, fallback, alt, w, h }: { src: string; fallback: string; alt: string; w: string; h: string }) => {
+const FloatingImage = ({ src, alt, w, h }: { src: string; alt: string; w: string; h: string }) => {
   const [hovered, setHovered] = useState(false)
   return (
     <div
@@ -59,7 +58,6 @@ const FloatingImage = ({ src, fallback, alt, w, h }: { src: string; fallback: st
       <img
         src={src}
         alt={alt}
-        onError={(e) => { (e.currentTarget as HTMLImageElement).src = fallback; }}
         style={{
           width: "100%",
           height: "100%",
@@ -79,6 +77,7 @@ const FloatingImage = ({ src, fallback, alt, w, h }: { src: string; fallback: st
         flexDirection: "column",
         justifyContent: "flex-end",
         padding: "0.55rem 0.65rem",
+        pointerEvents: "none",
       }}>
         {hovered && (
           <>
@@ -130,16 +129,17 @@ export default function SpatialSystemsPage() {
           {layout.map(({ img, depth, top, left, w, h }, i) => (
             <FloatingElement key={i} depth={depth} style={{ top, left }}>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: i * 0.08 }}>
-                <FloatingImage src={images[img].url} fallback={images[img].fallback} alt={images[img].alt} w={w} h={h} />
+                <FloatingImage src={images[img].url} alt={images[img].alt} w={w} h={h} />
               </motion.div>
             </FloatingElement>
           ))}
         </Floating>
 
-        {/* Centre title — click to scramble */}
+        {/* Centre title — click to scramble. pointerEvents:none lets hover pass through to images. */}
         <div style={{
           position: "absolute", inset: 0, display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center", zIndex: 10, textAlign: "center", gap: "1rem",
+          pointerEvents: "none",
         }}>
           <motion.p
             initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -159,6 +159,7 @@ export default function SpatialSystemsPage() {
               color: "var(--silver)",
               userSelect: "none",
               display: "flex", flexDirection: "column", alignItems: "center", gap: "0.15em",
+              pointerEvents: "auto",
             }}
           >
             <TextScramble text="SPATIAL" style={{ display: "block" }} />
@@ -234,7 +235,6 @@ export default function SpatialSystemsPage() {
             <div key={i} style={{ aspectRatio: i % 3 === 1 ? "3/4" : "4/3", overflow: "hidden", background: "#0d0d0d" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={img.url} alt={img.alt}
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = img.fallback; }}
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", filter: "grayscale(0.15) contrast(1.05)", transition: "transform 0.7s cubic-bezier(0.16,1,0.3,1), filter 0.4s ease" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.transform = "scale(1.04)"; (e.currentTarget as HTMLImageElement).style.filter = "grayscale(0) contrast(1.1)"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.transform = "scale(1)"; (e.currentTarget as HTMLImageElement).style.filter = "grayscale(0.15) contrast(1.05)"; }}
