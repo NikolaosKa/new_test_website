@@ -1,8 +1,11 @@
+import Link from "next/link";
 import HalideTopoHero from "@/components/ui/halide-topo-hero";
 
+// href: route to navigate when the card is clicked (null = coming soon)
 const projects = [
   {
     id: "01",
+    href: "/projects/spatial-systems",
     title: "SPATIAL SYSTEMS",
     tag: "ARCHITECTURE / INTERIORS",
     image: "/explo.png",
@@ -12,6 +15,7 @@ const projects = [
   },
   {
     id: "02",
+    href: null,
     title: "COMPUTATIONAL DESIGN",
     tag: "PARAMETRIC / FABRICATION",
     image: "/comp.jpg",
@@ -21,6 +25,7 @@ const projects = [
   },
   {
     id: "03",
+    href: null,
     title: "DIGITAL TO PHYSICAL",
     tag: "PROTOTYPING / INSTALLATION",
     image: "/digital.jpg",
@@ -46,25 +51,29 @@ export default function Home() {
         </h2>
 
         <div className="projects-grid">
-          {projects.map((project) => (
-            <article key={project.id} className="project-card">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={project.image}
-                alt={project.title}
-                style={{
-                  filter: project.filter,
-                  mixBlendMode: project.blend,
-                }}
-                className="project-img"
-              />
-              <div className="project-card-overlay">
-                <span className="project-number">{project.id} /</span>
-                <h3 className="project-title">{project.title}</h3>
-                <p className="project-tag">{project.tag}</p>
-              </div>
-            </article>
-          ))}
+          {projects.map((project) => {
+            const card = (
+              <article key={project.id} className="project-card" style={{ cursor: project.href ? "pointer" : "default" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={project.image}
+                  alt={project.title}
+                  style={{ filter: project.filter, mixBlendMode: project.blend }}
+                  className="project-img"
+                />
+                <div className="project-card-overlay">
+                  <span className="project-number">{project.id} /</span>
+                  <h3 className="project-title">{project.title}</h3>
+                  <p className="project-tag">{project.tag}</p>
+                </div>
+              </article>
+            );
+            return project.href ? (
+              <Link key={project.id} href={project.href} style={{ textDecoration: "none" }}>
+                {card}
+              </Link>
+            ) : card;
+          })}
         </div>
 
         {/* Footer */}
