@@ -6,16 +6,20 @@ import Link from "next/link"
 import Floating, { FloatingElement } from "@/components/ui/parallax-floating"
 import { TextScramble } from "@/components/ui/text-scramble"
 
-// Architecture images — spread around the title zone (avoid center 30–70% x 25–75% y)
+// ── Cover images ──────────────────────────────────────────────────────────────
+// SOURCE RULE: always pull from /projects/Project_XX/06_Cover_Images/
+// Add files named 01.jpg, 02.jpg … to that folder and update the urls below.
+// Until images are added, Unsplash placeholders are used.
+const COVER_BASE = "/projects/Project_01/06_Cover_Images"
 const images = [
-  { url: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=500&auto=format&fit=crop&q=80", alt: "Brutalist facade" },
-  { url: "https://images.unsplash.com/photo-1431576901776-e539bd916ba2?w=500&auto=format&fit=crop&q=80", alt: "Geometric building" },
-  { url: "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=500&auto=format&fit=crop&q=80", alt: "Modern structure" },
-  { url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=500&auto=format&fit=crop&q=80", alt: "Interior study" },
-  { url: "https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=500&auto=format&fit=crop&q=80", alt: "Urban context" },
-  { url: "https://images.unsplash.com/photo-1524230572899-a752b3835840?w=500&auto=format&fit=crop&q=80", alt: "Architectural elevation" },
-  { url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&auto=format&fit=crop&q=80", alt: "Material study" },
-  { url: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=500&auto=format&fit=crop&q=80", alt: "Residential exterior" },
+  { url: `${COVER_BASE}/01.jpg`, fallback: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 01" },
+  { url: `${COVER_BASE}/02.jpg`, fallback: "https://images.unsplash.com/photo-1431576901776-e539bd916ba2?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 02" },
+  { url: `${COVER_BASE}/03.jpg`, fallback: "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 03" },
+  { url: `${COVER_BASE}/04.jpg`, fallback: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 04" },
+  { url: `${COVER_BASE}/05.jpg`, fallback: "https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 05" },
+  { url: `${COVER_BASE}/06.jpg`, fallback: "https://images.unsplash.com/photo-1524230572899-a752b3835840?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 06" },
+  { url: `${COVER_BASE}/07.jpg`, fallback: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 07" },
+  { url: `${COVER_BASE}/08.jpg`, fallback: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=500&auto=format&fit=crop&q=80", alt: "Spatial study 08" },
 ]
 
 const details = [
@@ -86,13 +90,8 @@ export default function SpatialSystemsPage() {
                 initial={{ opacity: 0 }}
                 src={images[img].url}
                 alt={images[img].alt}
-                style={{
-                  width: w,
-                  height: h,
-                  objectFit: "cover",
-                  display: "block",
-                  filter: "grayscale(0.2) contrast(1.08)",
-                }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = images[img].fallback; }}
+                style={{ width: w, height: h, objectFit: "cover", display: "block", filter: "grayscale(0.2) contrast(1.08)" }}
               />
             </FloatingElement>
           ))}
@@ -116,8 +115,8 @@ export default function SpatialSystemsPage() {
             transition={{ duration: 0.9, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
             style={{
               fontFamily: "Syncopate, sans-serif", fontWeight: 700,
-              fontSize: "clamp(2rem,5.5vw,5rem)",
-              lineHeight: 0.92, letterSpacing: "-0.02em",
+              fontSize: "clamp(1.4rem,2.8vw,2.8rem)",
+              lineHeight: 0.95, letterSpacing: "-0.01em",
               color: "var(--silver)",
               userSelect: "none",
             }}
@@ -129,7 +128,7 @@ export default function SpatialSystemsPage() {
           <motion.p
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 1.1 }}
-            style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: "0.62rem", letterSpacing: "0.2em", color: "rgba(224,224,224,0.3)" }}
+            style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: "0.52rem", letterSpacing: "0.18em", color: "rgba(224,224,224,0.28)" }}
           >
             ARCHITECTURE · INTERIORS · SPATIAL STUDIES
           </motion.p>
@@ -137,9 +136,9 @@ export default function SpatialSystemsPage() {
           <motion.p
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 1.6 }}
-            style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: "0.46rem", letterSpacing: "0.18em", color: "rgba(224,224,224,0.18)", marginTop: "0.4rem" }}
+            style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: "0.42rem", letterSpacing: "0.18em", color: "rgba(224,224,224,0.16)", marginTop: "0.3rem" }}
           >
-            [ CLICK TITLE TO DECODE ]
+            [ HOVER OR TAP TO DECODE ]
           </motion.p>
         </div>
 
@@ -195,6 +194,7 @@ export default function SpatialSystemsPage() {
             <div key={i} style={{ aspectRatio: i % 3 === 1 ? "3/4" : "4/3", overflow: "hidden", background: "#0d0d0d" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={img.url} alt={img.alt}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = img.fallback; }}
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", filter: "grayscale(0.15) contrast(1.05)", transition: "transform 0.7s cubic-bezier(0.16,1,0.3,1), filter 0.4s ease" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.transform = "scale(1.04)"; (e.currentTarget as HTMLImageElement).style.filter = "grayscale(0) contrast(1.1)"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.transform = "scale(1)"; (e.currentTarget as HTMLImageElement).style.filter = "grayscale(0.15) contrast(1.05)"; }}

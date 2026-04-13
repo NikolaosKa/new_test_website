@@ -8,8 +8,6 @@ interface TextScrambleProps {
   text: string
   className?: string
   style?: React.CSSProperties
-  /** trigger on "click" (default) or "hover" */
-  trigger?: "click" | "hover"
   /** color of scrambling characters — defaults to var(--accent) */
   scrambleColor?: string
 }
@@ -18,7 +16,6 @@ export function TextScramble({
   text,
   className = "",
   style,
-  trigger = "click",
   scrambleColor = "var(--accent)",
 }: TextScrambleProps) {
   const [displayText, setDisplayText] = useState(text)
@@ -30,7 +27,8 @@ export function TextScramble({
     if (isScrambling) return
     setIsScrambling(true)
     frameRef.current = 0
-    const duration = text.length * 3
+    // Slower: 55 ms tick, 6 frames per character → ~330 ms per char reveal
+    const duration = text.length * 6
 
     if (intervalRef.current) clearInterval(intervalRef.current)
 
@@ -55,23 +53,20 @@ export function TextScramble({
         setDisplayText(text)
         setIsScrambling(false)
       }
-    }, 30)
+    }, 55)
   }, [text, isScrambling])
 
   useEffect(() => {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [])
 
-  const handlers =
-    trigger === "hover"
-      ? { onMouseEnter: scramble }
-      : { onClick: scramble }
-
+  // Always respond to both hover and click/tap so mobile users can trigger it too
   return (
     <span
       className={className}
       style={{ cursor: "pointer", ...style }}
-      {...handlers}
+      onMouseEnter={scramble}
+      onClick={scramble}
     >
       {displayText.split("").map((char, i) => (
         <span
