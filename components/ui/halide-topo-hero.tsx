@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 // Portfolio images P1–P24
 const PORTFOLIO_IMAGES = Array.from({ length: 24 }, (_, i) => `/projects/Old_Portfolio/Images/P${i + 1}.jpg`);
@@ -13,6 +13,47 @@ const Hero3DScene = dynamic(() => import("./hero-3d-scene"), { ssr: false });
 
 export const HalideTopoHero = () => {
   const [carouselOpen, setCarouselOpen] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const cardElemsRef = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Direct-DOM scroll handler — no re-renders, smooth fade between cards
+  const handleCarouselScroll = useCallback(() => {
+    const container = carouselRef.current;
+    if (!container) return;
+    const s = container.scrollTop;
+    const vh = container.clientHeight;
+    const fadeRange = vh * 0.3;
+    cardElemsRef.current.forEach((el, i) => {
+      if (!el) return;
+      let opacity: number;
+      if (i === 0) {
+        // First card: fade out as second card fades in
+        const exit = vh - fadeRange;
+        opacity = s < exit ? 1 : Math.max(0, 1 - (s - exit) / fadeRange);
+      } else {
+        const entry = i * vh;
+        if (s < entry - fadeRange) opacity = 0;
+        else if (s < entry) opacity = (s - (entry - fadeRange)) / fadeRange;
+        else if (s < entry + vh - fadeRange) opacity = 1;
+        else opacity = Math.max(0, 1 - (s - (entry + vh - fadeRange)) / fadeRange);
+      }
+      el.style.opacity = String(Math.min(1, Math.max(0, opacity)));
+    });
+  }, []);
+
+  // Wire up scroll listener when carousel opens; reset to top
+  useEffect(() => {
+    if (!carouselOpen) return;
+    const el = carouselRef.current;
+    if (!el) return;
+    el.scrollTop = 0;
+    // Reset all opacities: first card visible, rest hidden
+    cardElemsRef.current.forEach((card, i) => {
+      if (card) card.style.opacity = i === 0 ? "1" : "0";
+    });
+    el.addEventListener("scroll", handleCarouselScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleCarouselScroll);
+  }, [carouselOpen, handleCarouselScroll]);
 
   // Close on Escape
   useEffect(() => {
@@ -201,6 +242,7 @@ export const HalideTopoHero = () => {
 
           {/* Scrollable full-screen overlay — sticky cards work inside a scroll container */}
           <div
+            ref={carouselRef}
             style={{
               position: "fixed",
               inset: 0,
@@ -241,6 +283,7 @@ export const HalideTopoHero = () => {
               {PORTFOLIO_IMAGES.map((src, i) => (
                 <div
                   key={i}
+                  ref={el => { cardElemsRef.current[i] = el; }}
                   style={{
                     position: "sticky",
                     top: 0,
@@ -250,6 +293,8 @@ export const HalideTopoHero = () => {
                     alignItems: "center",
                     justifyContent: "center",
                     background: "#050505",
+                    opacity: i === 0 ? 1 : 0,
+                    transition: "opacity 0.05s linear",
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
