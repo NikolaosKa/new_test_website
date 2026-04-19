@@ -133,13 +133,13 @@ function BannerCard({ banner, index }: { banner: Banner; index: number }) {
         initial: { opacity: 0, y: 16 },
         whileInView: { opacity: 1, y: 0 },
         viewport: { once: true, margin: "-20px" },
-        transition: { duration: 0.5, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] },
+        transition: { duration: 0.5, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] as const },
       }
     : {
         initial: { opacity: 0, x: -64 },
         whileInView: { opacity: 1, x: 0 },
         viewport: { once: true, margin: "-40px" },
-        transition: { duration: 0.68, delay: 0.18 + index * 0.16, ease: [0.16, 1, 0.3, 1] },
+        transition: { duration: 0.68, delay: 0.18 + index * 0.16, ease: [0.16, 1, 0.3, 1] as const },
       }
 
   const inner = (
@@ -322,7 +322,7 @@ function CategoryRow({ cat }: { cat: Category }) {
         initial={{ opacity: 0, y: isMobile ? 20 : 36 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-40px" }}
-        transition={{ duration: isMobile ? 0.5 : 0.75, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: isMobile ? 0.5 : 0.75, ease: [0.16, 1, 0.3, 1] as const }}
         style={isMobile ? {} : { position: "sticky", top: "18vh" }}
       >
         {/* Number */}
@@ -427,7 +427,7 @@ export function ProjectsSection() {
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }}
           style={{ marginBottom: "clamp(2rem, 4vw, 4rem)" }}
         >
           <p className="section-label">002 / SELECTED WORK</p>

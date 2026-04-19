@@ -63,7 +63,7 @@ export default function WhiteLeafPage() {
         {/* Orange accent bar */}
         <motion.div
           initial={{ scaleY: 0 }} animate={{ scaleY: 1 }}
-          transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] as const }}
           style={{
             position: "absolute",
             top: "clamp(5rem,10vw,8rem)", left: "clamp(1.5rem,4vw,4rem)",
@@ -84,7 +84,7 @@ export default function WhiteLeafPage() {
 
         <motion.div
           initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.9, delay: 0.35, ease: [0.16, 1, 0.3, 1] as const }}
           style={{ position: "absolute", bottom: "clamp(2rem,5vw,4rem)", left: "clamp(1.5rem,4vw,4rem)", maxWidth: "min(560px,55vw)" }}
         >
           <h1 style={{ fontFamily: "Syncopate, sans-serif", fontWeight: 700, fontSize: "clamp(2.4rem,6vw,5.5rem)", lineHeight: 0.92, letterSpacing: "-0.01em", color: "#1a1a1a", margin: "0 0 1.2rem" }}>

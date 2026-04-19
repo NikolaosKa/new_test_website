@@ -74,7 +74,7 @@ export default function LithosPage() {
         {/* Orange accent mark */}
         <motion.div
           initial={{ scaleY: 0 }} animate={{ scaleY: 1 }}
-          transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] as const }}
           style={{
             position: "absolute", top: "clamp(5.5rem,11vw,9rem)", left: "clamp(1.5rem,4vw,4rem)",
             width: "3px", height: "clamp(55px,8vh,90px)",
@@ -100,7 +100,7 @@ export default function LithosPage() {
         {/* Title */}
         <motion.div
           initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.9, delay: 0.3, ease: [0.16, 1, 0.3, 1] as const }}
           style={{ position: "absolute", bottom: "clamp(2rem,5vw,4.5rem)", left: "clamp(1.5rem,4vw,4rem)" }}
         >
           <p style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: "0.6rem", letterSpacing: "0.22em", color: "rgba(232,224,213,0.45)", margin: "0 0 0.5rem", fontStyle: "italic" }}>
