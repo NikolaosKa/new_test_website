@@ -25,6 +25,7 @@ interface Category {
   tag: string
   graphic: string
   graphicFilter: string
+  graphicHref: string | null
   banners: Banner[]
 }
 
@@ -35,6 +36,7 @@ const categories: Category[] = [
     tag: "ARCHITECTURE / INTERIORS",
     graphic: "/explo.png",
     graphicFilter: "brightness(0.82) contrast(1.12) saturate(1.15)",
+    graphicHref: "/projects/spatial-systems",
     banners: [
       {
         title: "NEXT STATION",
@@ -65,6 +67,7 @@ const categories: Category[] = [
     tag: "PARAMETRIC / FABRICATION",
     graphic: "/comp.jpg",
     graphicFilter: "brightness(0.7) contrast(1.2) saturate(1.1)",
+    graphicHref: null,
     banners: [
       {
         title: "PARAMETRIC FACADE",
@@ -95,6 +98,7 @@ const categories: Category[] = [
     tag: "PROTOTYPING / INSTALLATION",
     graphic: "/digital.jpg",
     graphicFilter: "brightness(0.68) contrast(1.15) saturate(0.95)",
+    graphicHref: null,
     banners: [
       {
         title: "PROTOTYPE 01",
@@ -299,6 +303,50 @@ function BannerCard({ banner, index }: { banner: Banner; index: number }) {
   )
 }
 
+// ── Graphic image block ────────────────────────────────────────────────────────
+function GraphicBlock({ cat }: { cat: Category }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      style={{ position: "relative", overflow: "hidden", aspectRatio: "4 / 3", background: "#060606", cursor: cat.graphicHref ? "pointer" : "default" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={cat.graphic}
+        alt={cat.title}
+        loading="eager"
+        style={{
+          width: "100%", height: "100%", objectFit: "cover",
+          filter: cat.graphicFilter,
+          transform: hovered && cat.graphicHref ? "scale(1.04)" : "scale(1)",
+          transition: "transform 0.7s cubic-bezier(0.16,1,0.3,1)",
+        }}
+      />
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40%", background: "linear-gradient(to top, rgba(8,8,8,0.85), transparent)" }} />
+      {cat.graphicHref && (
+        <div style={{
+          position: "absolute", bottom: 0, left: 0, right: 0, height: "2px",
+          background: "linear-gradient(to right, var(--accent), transparent)",
+          transform: hovered ? "scaleX(1)" : "scaleX(0.3)",
+          transformOrigin: "left",
+          transition: "transform 0.5s cubic-bezier(0.16,1,0.3,1)",
+        }} />
+      )}
+      <div style={{
+        position: "absolute", bottom: "0.8rem", left: "0.9rem",
+        fontFamily: "'Share Tech Mono', monospace",
+        fontSize: "0.44rem", letterSpacing: "0.18em",
+        color: hovered && cat.graphicHref ? "rgba(255,60,0,0.7)" : "rgba(224,224,224,0.3)",
+        transition: "color 0.25s",
+      }}>
+        {cat.graphicHref ? "VIEW ALL →" : `${cat.banners.length} PROJECTS`}
+      </div>
+    </div>
+  )
+}
+
 // ── Category row ───────────────────────────────────────────────────────────────
 function CategoryRow({ cat }: { cat: Category }) {
   const isMobile = useIsMobile()
@@ -307,11 +355,9 @@ function CategoryRow({ cat }: { cat: Category }) {
     <div
       style={{
         display: "grid",
-        // Mobile: single column — Left info on top, banners below
-        // Desktop: 40/60 split with sticky left
         gridTemplateColumns: isMobile ? "1fr" : "minmax(0,4fr) minmax(0,6fr)",
         gap: isMobile ? "2rem" : "clamp(2rem, 4vw, 5rem)",
-        alignItems: "start",
+        alignItems: "stretch",
         borderTop: "1px solid rgba(224,224,224,0.06)",
         paddingTop: "clamp(2.5rem, 6vw, 6.5rem)",
         paddingBottom: "clamp(2.5rem, 6vw, 6.5rem)",
@@ -340,7 +386,7 @@ function CategoryRow({ cat }: { cat: Category }) {
         <h3 style={{
           fontFamily: "Syncopate, sans-serif",
           fontWeight: 700,
-          fontSize: "clamp(1.4rem, 2.8vw, 2.6rem)",
+          fontSize: "clamp(1.0rem, 1.8vw, 1.7rem)",
           lineHeight: 1.0,
           letterSpacing: "-0.02em",
           color: "var(--silver)",
@@ -361,46 +407,14 @@ function CategoryRow({ cat }: { cat: Category }) {
           {cat.tag}
         </p>
 
-        {/* Graphic */}
-        <div style={{
-          position: "relative",
-          overflow: "hidden",
-          aspectRatio: "4 / 3",
-          background: "#060606",
-        }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={cat.graphic}
-            alt={cat.title}
-            loading="eager"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              filter: cat.graphicFilter,
-            }}
-          />
-          {/* Corner accent */}
-          <div style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: "40%",
-            background: "linear-gradient(to top, rgba(8,8,8,0.85), transparent)",
-          }} />
-          <div style={{
-            position: "absolute",
-            bottom: "0.8rem",
-            left: "0.9rem",
-            fontFamily: "'Share Tech Mono', monospace",
-            fontSize: "0.44rem",
-            letterSpacing: "0.18em",
-            color: "rgba(224,224,224,0.3)",
-          }}>
-            {cat.banners.length} PROJECTS
-          </div>
-        </div>
+        {/* Graphic — clickable if graphicHref is set */}
+        {cat.graphicHref ? (
+          <Link href={cat.graphicHref} style={{ textDecoration: "none", display: "block" }}>
+            <GraphicBlock cat={cat} />
+          </Link>
+        ) : (
+          <GraphicBlock cat={cat} />
+        )}
       </motion.div>
 
       {/* ── Right column: banner stack ── */}

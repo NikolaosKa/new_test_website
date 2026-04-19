@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import RadialOrbitalTimeline, { skillsTimelineData } from "@/components/ui/radial-orbital-timeline";
 
 const skills = [
   { name: "RHINO + GRASSHOPPER",   level: 92 },
@@ -534,25 +535,13 @@ export default function AboutPage() {
         {/* ── Skills ──────────────────────────────────────────────────────── */}
         <section ref={skillsRef} style={{ padding:"clamp(4rem,8vw,8rem) clamp(1.5rem,6vw,6rem)", borderTop:"1px solid rgba(224,224,224,0.06)", maxWidth:"1400px", margin:"0 auto" }}>
           <p style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.62rem", letterSpacing:"0.22em", color:"var(--accent)", marginBottom:"1.2rem" }}>002 / EXPERTISE</p>
-          <h2 style={{ fontFamily:"Syncopate,sans-serif", fontWeight:700, fontSize:"clamp(1.5rem,3vw,2.5rem)", letterSpacing:"-0.03em", marginBottom:"4rem", color:"var(--silver)", lineHeight:0.95 }}>
+          <h2 style={{ fontFamily:"Syncopate,sans-serif", fontWeight:700, fontSize:"clamp(1.5rem,3vw,2.5rem)", letterSpacing:"-0.03em", marginBottom:"1rem", color:"var(--silver)", lineHeight:0.95 }}>
             SKILLS &amp;<br />TOOLS
           </h2>
-          <div style={{ display:"flex", flexDirection:"column", gap:"2.4rem" }}>
-            {skills.map(({ name, level }, i) => (
-              <div key={name}>
-                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"0.65rem" }}>
-                  <span style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.68rem", letterSpacing:"0.15em", color:"var(--silver)" }}>{name}</span>
-                  <span style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.62rem", letterSpacing:"0.1em", color:"rgba(224,224,224,0.3)" }}>{level}%</span>
-                </div>
-                <div style={{ height:"2px", background:"rgba(224,224,224,0.07)", position:"relative", overflow:"hidden" }}>
-                  <div className="skill-bar-fill" style={{
-                    transform: skillsFill ? `scaleX(${level/100})` : "scaleX(0)",
-                    transition: skillsReady ? `transform 1.5s cubic-bezier(0.16,1,0.3,1) ${i*0.1}s` : "none",
-                  }} />
-                </div>
-              </div>
-            ))}
-          </div>
+          <p style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.58rem", letterSpacing:"0.12em", color:"rgba(224,224,224,0.3)", marginBottom:"2rem" }}>
+            CLICK A NODE TO EXPLORE · CLICK BACKGROUND TO RESET
+          </p>
+          <RadialOrbitalTimeline timelineData={skillsTimelineData} />
         </section>
 
         {/* ── Experience ──────────────────────────────────────────────────── */}
