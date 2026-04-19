@@ -1,0 +1,10 @@
+import puppeteer from "puppeteer";
+const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
+const page = await browser.newPage();
+await page.setViewport({ width: 1440, height: 900 });
+await page.goto(process.argv[2] || "http://localhost:3000", { waitUntil: "domcontentloaded", timeout: 30000 });
+await new Promise(r => setTimeout(r, 5000));
+const out = `temporary screenshots/screenshot-full-${Date.now()}.png`;
+await page.screenshot({ path: out, fullPage: true });
+await browser.close();
+console.log("Saved:", out);

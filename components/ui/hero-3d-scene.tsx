@@ -4,8 +4,10 @@ import { Suspense, useEffect, useRef, useState, Component, ReactNode } from "rea
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 
-const MODEL_PATH = "/hero_model_raw.glb";
+// hero_model.glb (214 KB) — was pointing at hero_model_raw.glb (12 MB) by mistake
+const MODEL_PATH = "/hero_model.glb";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type BuildingStats = { area: number; height: number; floors: number; year: number };
@@ -442,21 +444,56 @@ function AnnotationOverlay({
   );
 }
 
+// ─── Mobile static fallback (no WebGL) ───────────────────────────────────────
+function MobileHeroBackground() {
+  return (
+    <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
+      {/* Subtle radial gradient atmosphere */}
+      <div style={{
+        position: "absolute", inset: 0,
+        background: [
+          "radial-gradient(ellipse 80% 60% at 50% 80%, rgba(255,60,0,0.07) 0%, transparent 65%)",
+          "radial-gradient(ellipse 60% 40% at 75% 25%, rgba(80,90,180,0.05) 0%, transparent 55%)",
+        ].join(", "),
+      }} />
+      {/* Fine grid texture */}
+      <div style={{
+        position: "absolute", inset: 0,
+        backgroundImage: [
+          "linear-gradient(rgba(224,224,224,0.04) 1px, transparent 1px)",
+          "linear-gradient(90deg, rgba(224,224,224,0.04) 1px, transparent 1px)",
+        ].join(", "),
+        backgroundSize: "48px 48px",
+      }} />
+      {/* Corner accent lines */}
+      <div style={{
+        position: "absolute", bottom: "15%", left: "8%",
+        width: "clamp(60px,15vw,120px)", height: "1px",
+        background: "linear-gradient(to right, rgba(255,60,0,0.4), transparent)",
+      }} />
+      <div style={{
+        position: "absolute", bottom: "15%", right: "8%",
+        width: "clamp(60px,15vw,120px)", height: "1px",
+        background: "linear-gradient(to left, rgba(255,60,0,0.4), transparent)",
+      }} />
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Hero3DScene() {
-  // Plain mutable object — shared between Canvas (GLBModel) and RAF loop
-  const shared = useRef<HoverShared>({ group: null, camera: null, mouseNormX: 0 });
+  const isMobile = useIsMobile();
 
-  // React state — controls annotation visibility + content (updated on hover change)
+  // ALL hooks must be called unconditionally — Rules of Hooks
+  const shared     = useRef<HoverShared>({ group: null, camera: null, mouseNormX: 0 });
   const [hoverStats, setHoverStats] = useState<BuildingStats | null>(null);
+  const lineRef    = useRef<SVGLineElement   | null>(null);
+  const dotRef     = useRef<SVGCircleElement | null>(null);
+  const panelRef   = useRef<HTMLDivElement   | null>(null);
 
-  // DOM refs for RAF position updates — typed as plain objects to avoid RefObject quirks
-  const lineRef  = useRef<SVGLineElement   | null>(null);
-  const dotRef   = useRef<SVGCircleElement | null>(null);
-  const panelRef = useRef<HTMLDivElement   | null>(null);
-
-  // ── RAF loop: update line/dot/panel POSITION only (visibility via React state)
+  // RAF annotation loop — only runs on desktop (isMobile guard inside)
   useEffect(() => {
+    if (isMobile) return; // skip on mobile — no Canvas, no annotation
     let rafId: number;
 
     const tick = () => {
@@ -466,7 +503,6 @@ export default function Hero3DScene() {
       const panel = panelRef.current;
 
       if (group && camera && line && dot && panel) {
-        // World-space top-center of the elevated building group
         _box.setFromObject(group);
         _topPos.set(
           (_box.min.x + _box.max.x) / 2,
@@ -480,16 +516,13 @@ export default function Hero3DScene() {
         const sx = ((_topPos.x + 1) / 2) * W;
         const sy = ((-_topPos.y + 1) / 2) * H;
 
-        // Panel side follows mouse X — left half → left, right half → right
         const isRight = mouseNormX >= 0;
         const panelX  = isRight ? W - PANEL_MARGIN - PANEL_W : PANEL_MARGIN;
         const panelY  = Math.max(80, Math.min(H - 170, sy - 60));
 
-        // Update panel position
         panel.style.left = `${panelX}px`;
         panel.style.top  = `${panelY}px`;
 
-        // Update connecting line
         const lineEndX = isRight ? panelX : panelX + PANEL_W;
         const lineEndY = panelY + 60;
         line.setAttribute("x1", String(sx));
@@ -497,7 +530,6 @@ export default function Hero3DScene() {
         line.setAttribute("x2", String(lineEndX));
         line.setAttribute("y2", String(lineEndY));
 
-        // Update dot at building top
         dot.setAttribute("cx", String(sx));
         dot.setAttribute("cy", String(sy));
       }
@@ -507,13 +539,22 @@ export default function Hero3DScene() {
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, []);
+  }, [isMobile]);
 
+  // ── Mobile: return static background AFTER all hooks ──────────────────────
+  if (isMobile) return <MobileHeroBackground />;
+
+  // ── Desktop: full 3D Canvas ────────────────────────────────────────────────
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
       <Canvas
         camera={{ position: [0, 8, 10], fov: 50 }}
-        gl={{ antialias: true, alpha: true }}
+        gl={{
+          antialias: false,          // saves ~30% GPU; imperceptible at this scale
+          alpha: true,
+          powerPreference: "high-performance",
+        }}
+        dpr={[1, 1.5]}               // cap at 1.5× DPR — prevents 4× on Retina
         style={{ background: "transparent" }}
       >
         <ambientLight intensity={0.5} color="#ffffff" />
@@ -549,4 +590,11 @@ export default function Hero3DScene() {
   );
 }
 
-if (MODEL_PATH) useGLTF.preload(MODEL_PATH);
+// Preload only on non-touch desktop. We check both pointer and hover capability.
+if (
+  MODEL_PATH &&
+  typeof window !== "undefined" &&
+  !window.matchMedia("(max-width: 767px)").matches
+) {
+  useGLTF.preload(MODEL_PATH);
+}

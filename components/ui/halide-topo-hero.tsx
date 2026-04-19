@@ -119,8 +119,10 @@ export const HalideTopoHero = () => {
           </span>
         </a>
 
-        {/* Links */}
-        <div style={{ display: "flex", gap: "clamp(1rem, 2.5vw, 2.5rem)", alignItems: "center" }}>
+        {/* Links — hidden on mobile, visible on ≥768px */}
+        <div style={{ display: "flex", gap: "clamp(1rem, 2.5vw, 2.5rem)", alignItems: "center" }}
+          className="nav-links"
+        >
           {[
             { label: "WORK",    href: "#projects" },
             { label: "ABOUT",   href: "/about"    },
@@ -162,7 +164,7 @@ export const HalideTopoHero = () => {
               </a>
             )
           ))}
-          <a href="#" className="book-btn">
+          <a href="#" className="book-btn nav-book">
             BOOK APPOINTMENT
           </a>
         </div>
@@ -231,6 +233,16 @@ export const HalideTopoHero = () => {
 
         {/* Scroll indicator */}
         <div className="scroll-hint" />
+
+        {/* Gradient fade into projects section below — eliminates harsh divider */}
+        <div style={{
+          position: "absolute",
+          bottom: 0, left: 0, right: 0,
+          height: "14rem",
+          background: "linear-gradient(to bottom, transparent 0%, rgba(8,8,8,0.7) 60%, #080808 100%)",
+          zIndex: 8,
+          pointerEvents: "none",
+        }} />
       </section>
 
       {/* ── Portfolio Image Carousel Overlay ──────────────────────────────── */}

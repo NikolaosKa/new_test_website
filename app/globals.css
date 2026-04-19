@@ -61,6 +61,8 @@ body {
   transition: transform 0.5s ease;
 }
 
+/* After squoosh.app compression, /Map.webp will be ~300 KB instead of 5.7 MB.
+   Browser picks webp first, falls back to png if unsupported (IE11, old Safari). */
 .layer-1 {
   background-image: url("/Map.png");
   background-size: cover;
@@ -84,6 +86,11 @@ body {
   filter: grayscale(1) brightness(1) contrast(1.4);
   opacity: 0.2;
   mix-blend-mode: overlay;
+}
+
+/* On mobile, hide the CSS 3D map layers — they load 5.7 MB for nothing */
+@media (max-width: 767px) {
+  .layer-1, .layer-2, .layer-3 { display: none; }
 }
 
 .contours {
@@ -185,6 +192,8 @@ body {
   padding: clamp(4rem, 8vw, 8rem) clamp(1.5rem, 6vw, 6rem);
   position: relative;
   z-index: 5;
+  /* Pull up slightly so the hero gradient overlaps cleanly */
+  margin-top: -2px;
 }
 
 .projects-grid {
@@ -273,4 +282,20 @@ body {
   letter-spacing: -0.03em;
   line-height: 0.95;
   color: var(--silver);
+}
+
+/* ── Mobile nav — collapse text links, keep logo ─────────────────────────── */
+@media (max-width: 767px) {
+  .nav-links {
+    display: none !important;
+  }
+  /* Show only the BOOK button as a compact icon-style link */
+  .nav-book {
+    display: inline-block !important;
+    font-size: 0.5rem !important;
+    padding: 0.45rem 0.9rem !important;
+  }
+}
+@media (min-width: 768px) {
+  .nav-book { display: inline-block; }
 }

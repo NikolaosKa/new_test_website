@@ -9,12 +9,15 @@ import { TextScramble } from "@/components/ui/text-scramble"
 // ── Images ────────────────────────────────────────────────────────────────────
 const P = "/projects/Old_Portfolio/Images"
 const C1 = "/projects/Project_01"
+const C2 = "/projects/Project_02"
+const C3 = "/projects/Project_03/png/Lithos%20Page_03"
+const C4 = "/projects/Project_04/png/OH_Page_01"
 
 const images = [
   { url: `${C1}/06_Cover_Images/Cover%20Page.png`, alt: "Next Station", name: "NEXT STATION", year: "2025", href: "/projects/next-station" },
-  { url: `${P}/P6.jpg`,  alt: "Study 02", name: "COMING SOON", year: "—", href: null },
-  { url: `${P}/P9.jpg`,  alt: "Study 03", name: "COMING SOON", year: "—", href: null },
-  { url: `${P}/P12.jpg`, alt: "Study 04", name: "COMING SOON", year: "—", href: null },
+  { url: `${C2}/06_Cover_Images/P10.jpg`, alt: "White Leaf", name: "WHITE LEAF", year: "2020", href: "/projects/white-leaf" },
+  { url: `${C3}/Entrance.png`, alt: "Lithos", name: "LITHOS", year: "2021", href: "/projects/lithos" },
+  { url: `${C4}/Image.png`, alt: "OH", name: "OH", year: "2022", href: "/projects/oh" },
   { url: `${P}/P15.jpg`, alt: "Study 05", name: "COMING SOON", year: "—", href: null },
   { url: `${P}/P18.jpg`, alt: "Study 06", name: "COMING SOON", year: "—", href: null },
   { url: `${P}/P21.jpg`, alt: "Study 07", name: "COMING SOON", year: "—", href: null },
