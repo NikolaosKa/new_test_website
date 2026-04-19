@@ -44,9 +44,15 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
   const containerRef = useRef<HTMLDivElement>(null);
   const orbitRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Click anywhere outside nodes → reset rotation
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === containerRef.current || e.target === orbitRef.current) {
+    const target = e.target as HTMLElement;
+    const isNode = Object.values(nodeRefs.current).some(
+      (ref) => ref && (ref === target || ref.contains(target))
+    );
+    if (!isNode) {
       setExpandedItems({});
       setActiveNodeId(null);
       setPulseEffect({});
@@ -59,28 +65,46 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
     return item ? item.relatedIds : [];
   };
 
-  const toggleItem = (id: number) => {
-    setExpandedItems((prev) => {
+  // Hover enter — show card
+  const handleNodeEnter = (id: number) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    setExpandedItems(() => {
       const newState: Record<number, boolean> = {};
-      Object.keys(prev).forEach((key) => { newState[parseInt(key)] = false; });
-      newState[id] = !prev[id];
-      if (!prev[id]) {
-        setActiveNodeId(id);
-        setAutoRotate(false);
-        const related: Record<number, boolean> = {};
-        getRelatedItems(id).forEach((relId) => { related[relId] = true; });
-        setPulseEffect(related);
-        // Center on node
-        const nodeIndex = timelineData.findIndex((item) => item.id === id);
-        const targetAngle = (nodeIndex / timelineData.length) * 360;
-        setRotationAngle(270 - targetAngle);
-      } else {
-        setActiveNodeId(null);
-        setAutoRotate(true);
-        setPulseEffect({});
-      }
+      newState[id] = true;
       return newState;
     });
+    setActiveNodeId(id);
+    setAutoRotate(false);
+    const related: Record<number, boolean> = {};
+    getRelatedItems(id).forEach((relId) => { related[relId] = true; });
+    setPulseEffect(related);
+    const nodeIndex = timelineData.findIndex((item) => item.id === id);
+    const targetAngle = (nodeIndex / timelineData.length) * 360;
+    setRotationAngle(270 - targetAngle);
+  };
+
+  // Hover leave — small delay before collapsing (lets user move into card)
+  const handleNodeLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setExpandedItems({});
+      setActiveNodeId(null);
+      setPulseEffect({});
+      setAutoRotate(true);
+    }, 200);
+  };
+
+  // Keep card open when cursor enters the card itself
+  const handleCardEnter = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+  };
+
+  const handleCardLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setExpandedItems({});
+      setActiveNodeId(null);
+      setPulseEffect({});
+      setAutoRotate(true);
+    }, 120);
   };
 
   useEffect(() => {
@@ -123,7 +147,7 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
 
   return (
     <div
-      className="relative w-full overflow-hidden"
+      className="relative w-full overflow-visible"
       style={{ height: "520px", background: "transparent" }}
       ref={containerRef}
       onClick={handleContainerClick}
@@ -202,7 +226,8 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
                 transition: "opacity 0.3s, z-index 0s",
                 cursor: "pointer",
               }}
-              onClick={(e) => { e.stopPropagation(); toggleItem(item.id); }}
+              onMouseEnter={() => handleNodeEnter(item.id)}
+              onMouseLeave={handleNodeLeave}
             >
               {/* Glow aura */}
               <div style={{
@@ -252,17 +277,20 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
 
               {/* Expanded card */}
               {isExpanded && (
-                <Card style={{
-                  position: "absolute",
-                  top: "52px",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  width: "220px",
-                  background: "rgba(8,8,8,0.96)",
-                  backdropFilter: "blur(12px)",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  boxShadow: "0 16px 48px rgba(0,0,0,0.8)",
-                }}>
+                <Card
+                  onMouseEnter={handleCardEnter}
+                  onMouseLeave={handleCardLeave}
+                  style={{
+                    position: "absolute",
+                    top: "52px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: "220px",
+                    background: "rgba(8,8,8,0.96)",
+                    backdropFilter: "blur(12px)",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    boxShadow: "0 16px 48px rgba(0,0,0,0.8)",
+                  }}>
                   {/* Connector line */}
                   <div style={{
                     position: "absolute",

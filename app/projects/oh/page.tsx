@@ -50,8 +50,11 @@ export default function OHPage() {
             NIKOLAOS KALAITZIDIS
           </span>
         </Link>
-        <Link href="/#projects" style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: "0.58rem", letterSpacing: "0.18em", color: "rgba(220,232,224,0.45)", textDecoration: "none" }}>
-          ← BACK
+        <Link href="/projects/spatial-systems"
+          style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: "0.58rem", letterSpacing: "0.18em", color: "rgba(220,232,224,0.45)", textDecoration: "none" }}
+          onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")}
+          onMouseLeave={e => (e.currentTarget.style.color = "rgba(220,232,224,0.45)")}>
+          ← SPATIAL SYSTEMS
         </Link>
       </nav>
 

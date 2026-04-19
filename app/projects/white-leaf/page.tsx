@@ -38,12 +38,12 @@ export default function WhiteLeafPage() {
           </span>
         </Link>
         <Link
-          href="/#projects"
+          href="/projects/spatial-systems"
           style={{ fontFamily: "Syncopate, sans-serif", fontSize: "0.52rem", letterSpacing: "0.14em", color: "rgba(26,26,26,0.5)", textDecoration: "none", transition: "color 0.2s" }}
           onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#c0460a" }}
           onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(26,26,26,0.5)" }}
         >
-          ← BACK
+          ← SPATIAL SYSTEMS
         </Link>
       </nav>
 

@@ -4,6 +4,18 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Menu, X, Search } from "lucide-react";
+
+// ── Projects data for search ──────────────────────────────────────────────────
+const projectsData = [
+  { title: "NEXT STATION",     category: "SPATIAL SYSTEMS",    keywords: ["urban", "mobility", "metro", "barcelona", "gas station", "adaptive reuse"], href: "/projects/next-station" },
+  { title: "WHITE LEAF",       category: "SPATIAL SYSTEMS",    keywords: ["school", "fine arts", "theater", "heraklion", "campus", "coastal"], href: "/projects/white-leaf" },
+  { title: "LITHOS",           category: "SPATIAL SYSTEMS",    keywords: ["barn", "restoration", "stone", "wood", "vernacular", "kefalonia"], href: "/projects/lithos" },
+  { title: "OH",               category: "SPATIAL SYSTEMS",    keywords: ["housing", "minimal", "concrete", "form", "residential"], href: "/projects/oh" },
+  { title: "SPATIAL SYSTEMS",  category: "CATEGORY",           keywords: ["architecture", "interiors", "design", "projects"], href: "/projects/spatial-systems" },
+  { title: "ABOUT",            category: "PAGE",               keywords: ["bio", "skills", "experience", "profile"], href: "/about" },
+  { title: "CONTACT",          category: "PAGE",               keywords: ["email", "hire", "collaboration", "photography", "instagram"], href: "/contact" },
+];
 
 // Portfolio images P1–P24
 const PORTFOLIO_IMAGES = Array.from({ length: 24 }, (_, i) => `/projects/Old_Portfolio/Images/P${i + 1}.jpg`);
@@ -13,8 +25,21 @@ const Hero3DScene = dynamic(() => import("./hero-3d-scene"), { ssr: false });
 
 export const HalideTopoHero = () => {
   const [carouselOpen, setCarouselOpen] = useState(false);
+  const [menuOpen,    setMenuOpen]    = useState(false);
+  const [searchOpen,  setSearchOpen]  = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const cardElemsRef = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Search filter
+  const searchResults = searchQuery.trim().length > 0
+    ? projectsData.filter(p =>
+        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.keywords.some(k => k.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : [];
 
   // Direct-DOM scroll handler — no re-renders, smooth fade between cards
   const handleCarouselScroll = useCallback(() => {
@@ -57,10 +82,25 @@ export const HalideTopoHero = () => {
 
   // Close on Escape
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setCarouselOpen(false); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setCarouselOpen(false);
+        setMenuOpen(false);
+        setSearchOpen(false);
+      }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  // Focus search input when opened
+  useEffect(() => {
+    if (searchOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    } else {
+      setSearchQuery("");
+    }
+  }, [searchOpen]);
 
   return (
     <>
@@ -78,97 +118,176 @@ export const HalideTopoHero = () => {
       <div className="halide-grain" style={{ filter: "url(#grain)" }} />
 
       {/* Fixed top navigation */}
-      <nav
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "clamp(1.2rem, 3vw, 2rem) clamp(1.5rem, 4vw, 4rem)",
-          background: "linear-gradient(to bottom, rgba(10,10,10,0.9) 0%, transparent 100%)",
-        }}
-      >
+      <nav style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "clamp(1.2rem, 3vw, 2rem) clamp(1.5rem, 4vw, 4rem)",
+        background: "linear-gradient(to bottom, rgba(10,10,10,0.9) 0%, transparent 100%)",
+      }}>
         {/* Brand logo */}
-        <a href="#" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.75rem" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.png"
-            alt="Nikolaos Kalaitzidis logo"
-            style={{
-              height: "clamp(44px, 5vw, 64px)",
-              width: "auto",
-              filter: "invert(1) brightness(2)",
-              mixBlendMode: "screen",
-            }}
-          />
-          <span
-            style={{
-              fontFamily: "Syncopate, sans-serif",
-              fontWeight: 700,
-              fontSize: "clamp(0.5rem, 0.9vw, 0.72rem)",
-              letterSpacing: "0.08em",
-              color: "var(--silver)",
-              whiteSpace: "nowrap",
-            }}
-          >
+          <img src="/logo.png" alt="Nikolaos Kalaitzidis logo" style={{ height: "clamp(44px, 5vw, 64px)", width: "auto", filter: "invert(1) brightness(2)", mixBlendMode: "screen" }} />
+          <span style={{ fontFamily: "Syncopate, sans-serif", fontWeight: 700, fontSize: "clamp(0.5rem, 0.9vw, 0.72rem)", letterSpacing: "0.08em", color: "var(--silver)", whiteSpace: "nowrap" }}>
             NIKOLAOS KALAITZIDIS
           </span>
         </a>
 
-        {/* Links — hidden on mobile, visible on ≥768px */}
-        <div style={{ display: "flex", gap: "clamp(1rem, 2.5vw, 2.5rem)", alignItems: "center" }}
-          className="nav-links"
-        >
-          {[
-            { label: "WORK",    href: "#projects" },
-            { label: "ABOUT",   href: "/about"    },
-            { label: "CONTACT", href: "#contact"  },
-          ].map(({ label, href }) => (
-            label === "ABOUT" ? (
-              <Link
-                key={label}
-                href={href}
-                style={{
-                  fontFamily: "Syncopate, sans-serif",
-                  fontSize: "0.58rem",
-                  letterSpacing: "0.12em",
-                  color: "rgba(224,224,224,0.65)",
-                  textDecoration: "none",
-                  transition: "color 0.2s",
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--accent)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(224,224,224,0.65)"; }}
-              >
-                {label}
-              </Link>
-            ) : (
-              <a
-                key={label}
-                href={href}
-                style={{
-                  fontFamily: "Syncopate, sans-serif",
-                  fontSize: "0.58rem",
-                  letterSpacing: "0.12em",
-                  color: "rgba(224,224,224,0.65)",
-                  textDecoration: "none",
-                  transition: "color 0.2s",
-                }}
-                onMouseEnter={(e) => { (e.target as HTMLAnchorElement).style.color = "var(--accent)"; }}
-                onMouseLeave={(e) => { (e.target as HTMLAnchorElement).style.color = "rgba(224,224,224,0.65)"; }}
-              >
-                {label}
-              </a>
-            )
-          ))}
-          <a href="#" className="book-btn nav-book">
-            BOOK APPOINTMENT
-          </a>
+        {/* Right side — links + icons */}
+        <div style={{ display: "flex", gap: "clamp(0.8rem, 2vw, 2rem)", alignItems: "center" }}>
+          {/* Text links — hidden on mobile */}
+          <div className="nav-links" style={{ display: "flex", gap: "clamp(1rem, 2.5vw, 2.5rem)", alignItems: "center" }}>
+            {[
+              { label: "WORK",    href: "#projects", isLink: false },
+              { label: "ABOUT",   href: "/about",    isLink: true  },
+              { label: "CONTACT", href: "/contact",  isLink: true  },
+            ].map(({ label, href, isLink }) =>
+              isLink ? (
+                <Link key={label} href={href} style={{ fontFamily: "Syncopate, sans-serif", fontSize: "0.58rem", letterSpacing: "0.12em", color: "rgba(224,224,224,0.65)", textDecoration: "none", transition: "color 0.2s" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--accent)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(224,224,224,0.65)"; }}>
+                  {label}
+                </Link>
+              ) : (
+                <a key={label} href={href} style={{ fontFamily: "Syncopate, sans-serif", fontSize: "0.58rem", letterSpacing: "0.12em", color: "rgba(224,224,224,0.65)", textDecoration: "none", transition: "color 0.2s" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--accent)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(224,224,224,0.65)"; }}>
+                  {label}
+                </a>
+              )
+            )}
+          </div>
+
+          {/* Search icon */}
+          <button onClick={() => { setSearchOpen(v => !v); setMenuOpen(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(224,224,224,0.6)", padding: "4px", display: "flex", alignItems: "center", transition: "color 0.2s" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")}
+            onMouseLeave={e => (e.currentTarget.style.color = searchOpen ? "var(--accent)" : "rgba(224,224,224,0.6)")}>
+            <Search size={16} />
+          </button>
+
+          {/* Hamburger icon */}
+          <button onClick={() => { setMenuOpen(v => !v); setSearchOpen(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(224,224,224,0.6)", padding: "4px", display: "flex", alignItems: "center", transition: "color 0.2s" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")}
+            onMouseLeave={e => (e.currentTarget.style.color = menuOpen ? "var(--accent)" : "rgba(224,224,224,0.6)")}>
+            {menuOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
         </div>
       </nav>
+
+      {/* ── Hamburger dropdown menu ──────────────────────────────────────────── */}
+      {menuOpen && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 45,
+          background: "rgba(6,6,6,0.97)", backdropFilter: "blur(12px)",
+          display: "flex", flexDirection: "column",
+          padding: "clamp(6rem,10vw,8rem) clamp(1.5rem,6vw,6rem) 3rem",
+          overflowY: "auto",
+          animation: "menuSlideIn 0.3s cubic-bezier(0.16,1,0.3,1)",
+        }}>
+          <style>{`@keyframes menuSlideIn { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:translateY(0); } }`}</style>
+          <p style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: "0.54rem", letterSpacing: "0.22em", color: "var(--accent)", marginBottom: "3rem" }}>NAVIGATE</p>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {[
+              { label: "WORK",        href: "#projects", isLink: false },
+              { label: "ABOUT",       href: "/about",    isLink: true  },
+              { label: "CONTACT",     href: "/contact",  isLink: true  },
+            ].map(({ label, href, isLink }) =>
+              isLink ? (
+                <Link key={label} href={href} onClick={() => setMenuOpen(false)} style={{ fontFamily: "Syncopate,sans-serif", fontWeight: 700, fontSize: "clamp(1.6rem,5vw,4rem)", letterSpacing: "-0.02em", color: "rgba(224,224,224,0.8)", textDecoration: "none", padding: "0.6rem 0", borderBottom: "1px solid rgba(224,224,224,0.06)", transition: "color 0.2s, padding-left 0.2s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#fff"; (e.currentTarget as HTMLAnchorElement).style.paddingLeft = "0.5rem"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(224,224,224,0.8)"; (e.currentTarget as HTMLAnchorElement).style.paddingLeft = "0"; }}>
+                  {label}
+                </Link>
+              ) : (
+                <a key={label} href={href} onClick={() => setMenuOpen(false)} style={{ fontFamily: "Syncopate,sans-serif", fontWeight: 700, fontSize: "clamp(1.6rem,5vw,4rem)", letterSpacing: "-0.02em", color: "rgba(224,224,224,0.8)", textDecoration: "none", padding: "0.6rem 0", borderBottom: "1px solid rgba(224,224,224,0.06)", transition: "color 0.2s, padding-left 0.2s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#fff"; (e.currentTarget as HTMLAnchorElement).style.paddingLeft = "0.5rem"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(224,224,224,0.8)"; (e.currentTarget as HTMLAnchorElement).style.paddingLeft = "0"; }}>
+                  {label}
+                </a>
+              )
+            )}
+          </div>
+          <div style={{ marginTop: "3rem" }}>
+            <p style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: "0.52rem", letterSpacing: "0.2em", color: "rgba(224,224,224,0.3)", marginBottom: "1.5rem" }}>PROJECTS</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}>
+              {projectsData.filter(p => p.category !== "PAGE").map(p => (
+                <Link key={p.title} href={p.href} onClick={() => setMenuOpen(false)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", textDecoration: "none", padding: "0.6rem 0", borderBottom: "1px solid rgba(224,224,224,0.04)", gap: "1rem" }}
+                  onMouseEnter={e => { const el = e.currentTarget; el.style.paddingLeft = "0.4rem"; (el.querySelector(".proj-title") as HTMLElement | null)?.style && ((el.querySelector(".proj-title") as HTMLElement).style.color = "var(--accent)"); }}
+                  onMouseLeave={e => { const el = e.currentTarget; el.style.paddingLeft = "0"; (el.querySelector(".proj-title") as HTMLElement | null)?.style && ((el.querySelector(".proj-title") as HTMLElement).style.color = "rgba(224,224,224,0.7)"); }}>
+                  <span className="proj-title" style={{ fontFamily: "Syncopate,sans-serif", fontSize: "clamp(0.65rem,1.2vw,0.85rem)", letterSpacing: "0.04em", color: "rgba(224,224,224,0.7)", transition: "color 0.2s" }}>{p.title}</span>
+                  <span style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: "0.46rem", letterSpacing: "0.14em", color: "rgba(224,224,224,0.25)" }}>{p.category}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Search overlay ───────────────────────────────────────────────────── */}
+      {searchOpen && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 46,
+          background: "rgba(6,6,6,0.95)", backdropFilter: "blur(16px)",
+          display: "flex", flexDirection: "column", alignItems: "center",
+          padding: "clamp(6rem,10vw,8rem) clamp(1.5rem,6vw,6rem) 3rem",
+          animation: "menuSlideIn 0.25s cubic-bezier(0.16,1,0.3,1)",
+        }}>
+          {/* Search input */}
+          <div style={{ width: "100%", maxWidth: "680px", position: "relative", marginBottom: "3rem" }}>
+            <Search size={16} style={{ position: "absolute", left: "0", top: "50%", transform: "translateY(-50%)", color: "rgba(224,224,224,0.3)", pointerEvents: "none" }} />
+            <input
+              ref={searchInputRef}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="SEARCH PROJECTS, PAGES..."
+              style={{
+                width: "100%", background: "none",
+                border: "none", borderBottom: "1px solid rgba(224,224,224,0.2)",
+                padding: "1rem 1rem 1rem 2rem",
+                fontFamily: "Syncopate,sans-serif", fontSize: "clamp(1rem,2.5vw,1.5rem)",
+                letterSpacing: "0.04em", color: "var(--silver)",
+                outline: "none",
+              }}
+            />
+          </div>
+          {/* Results */}
+          {searchQuery.trim().length > 0 && (
+            <div style={{ width: "100%", maxWidth: "680px" }}>
+              {searchResults.length === 0 ? (
+                <p style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: "0.6rem", color: "rgba(224,224,224,0.3)", letterSpacing: "0.18em" }}>NO RESULTS FOUND</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {searchResults.map(p => (
+                    <Link key={p.title} href={p.href} onClick={() => setSearchOpen(false)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.2rem 0", borderBottom: "1px solid rgba(224,224,224,0.06)", textDecoration: "none", gap: "1rem", transition: "padding-left 0.2s" }}
+                      onMouseEnter={e => (e.currentTarget.style.paddingLeft = "0.5rem")}
+                      onMouseLeave={e => (e.currentTarget.style.paddingLeft = "0")}>
+                      <div>
+                        <div style={{ fontFamily: "Syncopate,sans-serif", fontSize: "clamp(0.75rem,1.5vw,1rem)", letterSpacing: "0.04em", color: "var(--silver)", marginBottom: "0.3rem" }}>{p.title}</div>
+                        <div style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: "0.48rem", letterSpacing: "0.14em", color: "rgba(224,224,224,0.3)" }}>{p.category}</div>
+                      </div>
+                      <span style={{ color: "var(--accent)", fontSize: "1rem" }}>→</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {searchQuery.trim().length === 0 && (
+            <div style={{ width: "100%", maxWidth: "680px" }}>
+              <p style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: "0.52rem", color: "rgba(224,224,224,0.25)", letterSpacing: "0.18em", marginBottom: "2rem" }}>QUICK ACCESS</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.6rem" }}>
+                {projectsData.map(p => (
+                  <Link key={p.title} href={p.href} onClick={() => setSearchOpen(false)} style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: "0.5rem", letterSpacing: "0.14em", color: "rgba(224,224,224,0.5)", border: "1px solid rgba(224,224,224,0.1)", padding: "0.4rem 0.9rem", textDecoration: "none", transition: "border-color 0.2s, color 0.2s" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--accent)"; (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,60,0,0.4)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(224,224,224,0.5)"; (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(224,224,224,0.1)"; }}>
+                    {p.title}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Hero section — full viewport */}
       <section

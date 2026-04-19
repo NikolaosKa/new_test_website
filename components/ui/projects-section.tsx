@@ -147,12 +147,12 @@ function BannerCard({ banner, index }: { banner: Banner; index: number }) {
       }
 
   const inner = (
-    <motion.div {...animProps}>
+    <motion.div {...animProps} style={{ flex: isMobile ? "none" : 1, display: "flex", flexDirection: "column" }}>
       <HoverGlowCard
         style={{
           width: "100%",
           position: "relative",
-          aspectRatio: isMobile ? "16 / 6" : "16 / 5",
+          ...(isMobile ? { aspectRatio: "16 / 6" } : { flex: 1, minHeight: "100px" }),
           overflow: "hidden",
           border: `1px solid ${hovered && banner.href ? "rgba(255,60,0,0.35)" : "rgba(224,224,224,0.07)"}`,
           transition: "border-color 0.3s ease",
@@ -290,14 +290,14 @@ function BannerCard({ banner, index }: { banner: Banner; index: number }) {
   return banner.href ? (
     <Link
       href={banner.href}
-      style={{ textDecoration: "none", display: "block" }}
+      style={{ textDecoration: "none", display: "flex", flexDirection: "column", flex: isMobile ? "none" : 1 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {inner}
     </Link>
   ) : (
-    <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+    <div style={{ display: "flex", flexDirection: "column", flex: isMobile ? "none" : 1 }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       {inner}
     </div>
   )
@@ -308,7 +308,7 @@ function GraphicBlock({ cat }: { cat: Category }) {
   const [hovered, setHovered] = useState(false)
   return (
     <div
-      style={{ position: "relative", overflow: "hidden", aspectRatio: "4 / 3", background: "#060606", cursor: cat.graphicHref ? "pointer" : "default" }}
+      style={{ position: "relative", overflow: "hidden", flex: 1, minHeight: "180px", background: "#060606", cursor: cat.graphicHref ? "pointer" : "default" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -369,7 +369,7 @@ function CategoryRow({ cat }: { cat: Category }) {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-40px" }}
         transition={{ duration: isMobile ? 0.5 : 0.75, ease: [0.16, 1, 0.3, 1] as const }}
-        style={isMobile ? {} : { position: "sticky", top: "18vh" }}
+        style={isMobile ? { display: "flex", flexDirection: "column" } : { position: "sticky", top: "18vh", display: "flex", flexDirection: "column", alignSelf: "start", height: "100%" }}
       >
         {/* Number */}
         <div style={{
@@ -418,7 +418,7 @@ function CategoryRow({ cat }: { cat: Category }) {
       </motion.div>
 
       {/* ── Right column: banner stack ── */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "clamp(0.8rem, 1.5vw, 1.2rem)" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "clamp(0.8rem, 1.5vw, 1.2rem)", minHeight: "400px" }}>
         {cat.banners.map((banner, i) => (
           <BannerCard key={i} banner={banner} index={i} />
         ))}
@@ -442,10 +442,10 @@ export function ProjectsSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }}
-          style={{ marginBottom: "clamp(2rem, 4vw, 4rem)" }}
+          style={{ marginBottom: "clamp(2rem, 4vw, 4rem)", textAlign: "center" }}
         >
           <p className="section-label">002 / SELECTED WORK</p>
-          <h2 className="section-heading">
+          <h2 className="section-heading" style={{ fontSize: "clamp(1.2rem, 2.5vw, 2.2rem)" }}>
             PROJECT
             <br />
             CATEGORIES

@@ -45,21 +45,6 @@ class ModelErrorBoundary extends Component<
   }
 }
 
-// ─── Walk up from a mesh to find its named Block_XX or Road group ancestor ────
-function findGroupRoot(mesh: THREE.Mesh, sceneRoot: THREE.Object3D): THREE.Object3D {
-  let obj: THREE.Object3D = mesh;
-  while (obj && obj !== sceneRoot) {
-    if (obj.name && /^(Block_|Road)/i.test(obj.name)) return obj;
-    if (!obj.parent) break;
-    obj = obj.parent;
-  }
-  // Fallback: one level up if it's a small group, else the mesh itself
-  const parent = mesh.parent;
-  if (!parent || parent === sceneRoot) return mesh;
-  const meshChildCount = parent.children.filter((c) => (c as THREE.Mesh).isMesh).length;
-  return meshChildCount <= 200 ? parent : mesh;
-}
-
 function isRoadNode(mesh: THREE.Mesh, sceneRoot: THREE.Object3D): boolean {
   let obj: THREE.Object3D = mesh;
   while (obj && obj !== sceneRoot) {
@@ -83,22 +68,19 @@ function GLBModel({
   const { scene } = useGLTF(path);
   const { camera, gl } = useThree();
 
-  const mouse       = useRef(new THREE.Vector2());
-  const raycaster   = useRef(new THREE.Raycaster());
-  const frameCount  = useRef(0);
+  const mouse          = useRef(new THREE.Vector2());
+  const raycaster      = useRef(new THREE.Raycaster());
+  const frameCount     = useRef(0);
 
-  const buildingMeshes  = useRef<THREE.Mesh[]>([]);
-  const meshToGroup     = useRef(new Map<THREE.Mesh, THREE.Object3D>());
-  const groupMeshes     = useRef(new Map<THREE.Object3D, THREE.Mesh[]>());
-  const groupOriginalY  = useRef(new Map<THREE.Object3D, number>());
-  const allGroups       = useRef<THREE.Object3D[]>([]);
-  const statsMap        = useRef(new Map<THREE.Object3D, BuildingStats>());
+  const buildingMeshes = useRef<THREE.Mesh[]>([]);
+  const meshOriginalY  = useRef(new Map<THREE.Mesh, number>());
+  const displacedMeshes = useRef(new Set<THREE.Mesh>());
+  const statsMap       = useRef(new Map<THREE.Mesh, BuildingStats>());
 
-  const hoveredGroupRef  = useRef<THREE.Object3D | null>(null);
-  const defaultMatRef    = useRef<THREE.MeshStandardMaterial | null>(null);
-  const hoveredMatRef    = useRef<THREE.MeshStandardMaterial | null>(null);
-  // scene scale factor stored so useFrame can convert world units → local units
-  const scaleFactorRef   = useRef(1);
+  const hoveredMeshRef = useRef<THREE.Mesh | null>(null);
+  const defaultMatRef  = useRef<THREE.MeshStandardMaterial | null>(null);
+  const hoveredMatRef  = useRef<THREE.MeshStandardMaterial | null>(null);
+  const scaleFactorRef = useRef(1);
 
   // Share camera with parent RAF loop
   useEffect(() => { shared.current.camera = camera; }, [camera, shared]);
@@ -155,7 +137,6 @@ function GLBModel({
     const buildings: THREE.Mesh[] = [];
 
     scene.traverse((obj) => {
-      // Hide edge lines
       if (
         obj instanceof THREE.Line ||
         obj instanceof THREE.LineSegments ||
@@ -165,35 +146,21 @@ function GLBModel({
       const mesh = obj as THREE.Mesh;
       if (!mesh.isMesh) return;
 
-      // Prefer name-based classification (Block_XX = building, Road = road)
-      // Fall back to material index for un-named meshes
-      const origMat  = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-      const matIdx   = origMats.indexOf(origMat);
-      const isRoad   = isRoadNode(mesh, scene) || matIdx === 1;
+      const origMat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+      const matIdx  = origMats.indexOf(origMat);
+      const isRoad  = isRoadNode(mesh, scene) || matIdx === 1;
 
       if (!isRoad) {
         mesh.material = buildingMat;
         buildings.push(mesh);
-
-        const root = findGroupRoot(mesh, scene);
-        meshToGroup.current.set(mesh, root);
-        if (!groupMeshes.current.has(root)) {
-          groupMeshes.current.set(root, []);
-          groupOriginalY.current.set(root, root.position.y);
-          allGroups.current.push(root);
-        }
-        groupMeshes.current.get(root)!.push(mesh);
+        meshOriginalY.current.set(mesh, mesh.position.y);
       } else {
         mesh.material = roadMat;
       }
     });
 
     buildingMeshes.current = buildings;
-    console.log(
-      "[Hero3D] building meshes:", buildings.length,
-      "| groups:", allGroups.current.length,
-      "| scale:", +(10 / maxDim).toFixed(2),
-    );
+    console.log("[Hero3D] building meshes:", buildings.length, "| scale:", +(10 / maxDim).toFixed(2));
   }, [scene]);
 
   // ── Mouse tracking ─────────────────────────────────────────────────────────
@@ -209,7 +176,7 @@ function GLBModel({
     return () => gl.domElement.removeEventListener("mousemove", onMove);
   }, [gl, shared]);
 
-  // ── Per-frame: raycast + hover elevation ─────────────────────────────────
+  // ── Per-frame: raycast + individual mesh hover elevation ─────────────────
   useFrame(() => {
     const meshes = buildingMeshes.current;
     if (!meshes.length) return;
@@ -218,41 +185,41 @@ function GLBModel({
     if (frameCount.current % 2 === 0) {
       raycaster.current.setFromCamera(mouse.current, camera);
       raycaster.current.firstHitOnly = true;
-      const hits     = raycaster.current.intersectObjects(meshes, false);
-      const hitMesh  = (hits[0]?.object as THREE.Mesh) ?? null;
-      const hitGroup = hitMesh ? (meshToGroup.current.get(hitMesh) ?? hitMesh) : null;
+      const hits    = raycaster.current.intersectObjects(meshes, false);
+      const hitMesh = (hits[0]?.object as THREE.Mesh) ?? null;
 
-      if (hitGroup !== hoveredGroupRef.current) {
-        // Restore material on the group we just left
-        if (hoveredGroupRef.current && defaultMatRef.current) {
-          (groupMeshes.current.get(hoveredGroupRef.current) ?? [])
-            .forEach((m) => { m.material = defaultMatRef.current!; });
+      if (hitMesh !== hoveredMeshRef.current) {
+        // Restore previous mesh material
+        if (hoveredMeshRef.current && defaultMatRef.current) {
+          hoveredMeshRef.current.material = defaultMatRef.current;
         }
+        hoveredMeshRef.current  = hitMesh;
+        shared.current.group    = hitMesh; // annotation uses this
 
-        hoveredGroupRef.current = hitGroup;
-        shared.current.group    = hitGroup;
-
-        if (hitGroup) {
-          if (hoveredMatRef.current) {
-            (groupMeshes.current.get(hitGroup) ?? [])
-              .forEach((m) => { m.material = hoveredMatRef.current!; });
-          }
-          if (!statsMap.current.has(hitGroup)) statsMap.current.set(hitGroup, randomStats());
-          onHoverChange(statsMap.current.get(hitGroup)!);
+        if (hitMesh) {
+          if (hoveredMatRef.current) hitMesh.material = hoveredMatRef.current;
+          if (!statsMap.current.has(hitMesh)) statsMap.current.set(hitMesh, randomStats());
+          onHoverChange(statsMap.current.get(hitMesh)!);
         } else {
           onHoverChange(null);
         }
       }
     }
 
-    // Animate elevation — fast rise while hovered, slow ease-out on descent
+    // Only animate displaced meshes + the currently hovered one (avoids N-mesh loop)
     const liftLocal = 0.8 / scaleFactorRef.current;
-    allGroups.current.forEach((g) => {
-      const orig      = groupOriginalY.current.get(g) ?? 0;
-      const isHovered = g === hoveredGroupRef.current;
+    const toAnimate = new Set(displacedMeshes.current);
+    if (hoveredMeshRef.current) toAnimate.add(hoveredMeshRef.current);
+
+    toAnimate.forEach((m) => {
+      const orig      = meshOriginalY.current.get(m) ?? 0;
+      const isHovered = m === hoveredMeshRef.current;
       const target    = isHovered ? orig + liftLocal : orig;
       const lerp      = isHovered ? 0.08 : 0.03;
-      g.position.y   += (target - g.position.y) * lerp;
+      m.position.y   += (target - m.position.y) * lerp;
+      const displaced  = Math.abs(m.position.y - orig) > 0.0005;
+      if (displaced) displacedMeshes.current.add(m);
+      else           displacedMeshes.current.delete(m);
     });
   });
 

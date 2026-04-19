@@ -44,12 +44,12 @@ export default function LithosPage() {
           </span>
         </Link>
         <Link
-          href="/#projects"
+          href="/projects/spatial-systems"
           style={{ fontFamily: "Syncopate, sans-serif", fontSize: "0.52rem", letterSpacing: "0.14em", color: "rgba(232,224,213,0.45)", textDecoration: "none", transition: "color 0.2s" }}
           onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#ff3c00" }}
           onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(232,224,213,0.45)" }}
         >
-          ← BACK
+          ← SPATIAL SYSTEMS
         </Link>
       </nav>
 
