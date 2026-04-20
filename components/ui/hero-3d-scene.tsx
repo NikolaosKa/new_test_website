@@ -4,10 +4,8 @@ import { Suspense, useEffect, useRef, useState, Component, ReactNode } from "rea
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 
-// hero_model.glb (214 KB) — was pointing at hero_model_raw.glb (12 MB) by mistake
-const MODEL_PATH = "/hero_model.glb";
+const MODEL_PATH = "/hero_model_raw.glb";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type BuildingStats = { area: number; height: number; floors: number; year: number };
@@ -45,6 +43,21 @@ class ModelErrorBoundary extends Component<
   }
 }
 
+// ─── Walk up from a mesh to find its named Block_XX or Road group ancestor ────
+function findGroupRoot(mesh: THREE.Mesh, sceneRoot: THREE.Object3D): THREE.Object3D {
+  let obj: THREE.Object3D = mesh;
+  while (obj && obj !== sceneRoot) {
+    if (obj.name && /^(Block_|Road)/i.test(obj.name)) return obj;
+    if (!obj.parent) break;
+    obj = obj.parent;
+  }
+  // Fallback: one level up if it's a small group, else the mesh itself
+  const parent = mesh.parent;
+  if (!parent || parent === sceneRoot) return mesh;
+  const meshChildCount = parent.children.filter((c) => (c as THREE.Mesh).isMesh).length;
+  return meshChildCount <= 200 ? parent : mesh;
+}
+
 function isRoadNode(mesh: THREE.Mesh, sceneRoot: THREE.Object3D): boolean {
   let obj: THREE.Object3D = mesh;
   while (obj && obj !== sceneRoot) {
@@ -53,17 +66,6 @@ function isRoadNode(mesh: THREE.Mesh, sceneRoot: THREE.Object3D): boolean {
     obj = obj.parent;
   }
   return false;
-}
-
-// Walk up the scene graph to find a Block_XX group root; returns the group name or null
-function findBlockGroupName(mesh: THREE.Mesh, sceneRoot: THREE.Object3D): string | null {
-  let obj: THREE.Object3D = mesh;
-  while (obj && obj !== sceneRoot) {
-    if (obj.name && /^Block/i.test(obj.name)) return obj.name;
-    if (!obj.parent) break;
-    obj = obj.parent;
-  }
-  return null;
 }
 
 // ─── GLB Model ────────────────────────────────────────────────────────────────
@@ -79,24 +81,22 @@ function GLBModel({
   const { scene } = useGLTF(path);
   const { camera, gl } = useThree();
 
-  const mouse          = useRef(new THREE.Vector2());
-  const raycaster      = useRef(new THREE.Raycaster());
-  const frameCount     = useRef(0);
+  const mouse       = useRef(new THREE.Vector2());
+  const raycaster   = useRef(new THREE.Raycaster());
+  const frameCount  = useRef(0);
 
   const buildingMeshes  = useRef<THREE.Mesh[]>([]);
-  const meshOriginalY   = useRef(new Map<THREE.Mesh, number>());
-  const displacedMeshes = useRef(new Set<THREE.Mesh>());
-  const statsMap        = useRef(new Map<THREE.Mesh, BuildingStats>());
+  const meshToGroup     = useRef(new Map<THREE.Mesh, THREE.Object3D>());
+  const groupMeshes     = useRef(new Map<THREE.Object3D, THREE.Mesh[]>());
+  const groupOriginalY  = useRef(new Map<THREE.Object3D, number>());
+  const allGroups       = useRef<THREE.Object3D[]>([]);
+  const statsMap        = useRef(new Map<THREE.Object3D, BuildingStats>());
 
-  // Group-level hover tracking
-  const meshToGroupName = useRef(new Map<THREE.Mesh, string>());
-  const groupMeshes     = useRef(new Map<string, THREE.Mesh[]>());
-  const hoveredGroupRef = useRef<string | null>(null);
-
-  const hoveredMeshRef = useRef<THREE.Mesh | null>(null);
-  const defaultMatRef  = useRef<THREE.MeshStandardMaterial | null>(null);
-  const hoveredMatRef  = useRef<THREE.MeshStandardMaterial | null>(null);
-  const scaleFactorRef = useRef(1);
+  const hoveredGroupRef  = useRef<THREE.Object3D | null>(null);
+  const defaultMatRef    = useRef<THREE.MeshStandardMaterial | null>(null);
+  const hoveredMatRef    = useRef<THREE.MeshStandardMaterial | null>(null);
+  // scene scale factor stored so useFrame can convert world units → local units
+  const scaleFactorRef   = useRef(1);
 
   // Share camera with parent RAF loop
   useEffect(() => { shared.current.camera = camera; }, [camera, shared]);
@@ -153,6 +153,7 @@ function GLBModel({
     const buildings: THREE.Mesh[] = [];
 
     scene.traverse((obj) => {
+      // Hide edge lines
       if (
         obj instanceof THREE.Line ||
         obj instanceof THREE.LineSegments ||
@@ -162,33 +163,35 @@ function GLBModel({
       const mesh = obj as THREE.Mesh;
       if (!mesh.isMesh) return;
 
-      const origMat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-      const matIdx  = origMats.indexOf(origMat);
-      const isRoad  = isRoadNode(mesh, scene) || matIdx === 1;
+      // Prefer name-based classification (Block_XX = building, Road = road)
+      // Fall back to material index for un-named meshes
+      const origMat  = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+      const matIdx   = origMats.indexOf(origMat);
+      const isRoad   = isRoadNode(mesh, scene) || matIdx === 1;
 
       if (!isRoad) {
         mesh.material = buildingMat;
         buildings.push(mesh);
-        meshOriginalY.current.set(mesh, mesh.position.y);
+
+        const root = findGroupRoot(mesh, scene);
+        meshToGroup.current.set(mesh, root);
+        if (!groupMeshes.current.has(root)) {
+          groupMeshes.current.set(root, []);
+          groupOriginalY.current.set(root, root.position.y);
+          allGroups.current.push(root);
+        }
+        groupMeshes.current.get(root)!.push(mesh);
       } else {
         mesh.material = roadMat;
       }
     });
 
     buildingMeshes.current = buildings;
-
-    // Build group lookup maps
-    meshToGroupName.current.clear();
-    groupMeshes.current.clear();
-    buildings.forEach(mesh => {
-      const gName = findBlockGroupName(mesh, scene);
-      if (gName) {
-        meshToGroupName.current.set(mesh, gName);
-        if (!groupMeshes.current.has(gName)) groupMeshes.current.set(gName, []);
-        groupMeshes.current.get(gName)!.push(mesh);
-      }
-    });
-    console.log("[Hero3D] building meshes:", buildings.length, "| groups:", groupMeshes.current.size, "| scale:", +(10 / maxDim).toFixed(2));
+    console.log(
+      "[Hero3D] building meshes:", buildings.length,
+      "| groups:", allGroups.current.length,
+      "| scale:", +(10 / maxDim).toFixed(2),
+    );
   }, [scene]);
 
   // ── Mouse tracking ─────────────────────────────────────────────────────────
@@ -204,7 +207,7 @@ function GLBModel({
     return () => gl.domElement.removeEventListener("mousemove", onMove);
   }, [gl, shared]);
 
-  // ── Per-frame: raycast + individual mesh hover elevation ─────────────────
+  // ── Per-frame: raycast + hover elevation ─────────────────────────────────
   useFrame(() => {
     const meshes = buildingMeshes.current;
     if (!meshes.length) return;
@@ -213,60 +216,41 @@ function GLBModel({
     if (frameCount.current % 2 === 0) {
       raycaster.current.setFromCamera(mouse.current, camera);
       raycaster.current.firstHitOnly = true;
-      const hits    = raycaster.current.intersectObjects(meshes, false);
-      const hitMesh = (hits[0]?.object as THREE.Mesh) ?? null;
+      const hits     = raycaster.current.intersectObjects(meshes, false);
+      const hitMesh  = (hits[0]?.object as THREE.Mesh) ?? null;
+      const hitGroup = hitMesh ? (meshToGroup.current.get(hitMesh) ?? hitMesh) : null;
 
-      const hitGroupName = hitMesh ? (meshToGroupName.current.get(hitMesh) ?? null) : null;
-      const groupChanged = hitGroupName !== hoveredGroupRef.current;
-      const soloChanged  = !hitGroupName && !hoveredGroupRef.current && hitMesh !== hoveredMeshRef.current;
-
-      if (groupChanged || soloChanged) {
-        // Restore previous hovered state
-        if (hoveredGroupRef.current) {
-          const prev = groupMeshes.current.get(hoveredGroupRef.current) ?? [];
-          prev.forEach(m => { if (defaultMatRef.current) m.material = defaultMatRef.current; });
-        } else if (hoveredMeshRef.current && defaultMatRef.current) {
-          hoveredMeshRef.current.material = defaultMatRef.current;
+      if (hitGroup !== hoveredGroupRef.current) {
+        // Restore material on the group we just left
+        if (hoveredGroupRef.current && defaultMatRef.current) {
+          (groupMeshes.current.get(hoveredGroupRef.current) ?? [])
+            .forEach((m) => { m.material = defaultMatRef.current!; });
         }
 
-        hoveredGroupRef.current = hitGroupName;
-        hoveredMeshRef.current  = hitMesh;
-        shared.current.group    = hitMesh;
+        hoveredGroupRef.current = hitGroup;
+        shared.current.group    = hitGroup;
 
-        if (hitGroupName) {
-          const grpMeshes = groupMeshes.current.get(hitGroupName) ?? [];
-          grpMeshes.forEach(m => { if (hoveredMatRef.current) m.material = hoveredMatRef.current; });
-          if (hitMesh && !statsMap.current.has(hitMesh)) statsMap.current.set(hitMesh, randomStats());
-          onHoverChange(hitMesh ? (statsMap.current.get(hitMesh) ?? null) : null);
-        } else if (hitMesh) {
-          if (hoveredMatRef.current) hitMesh.material = hoveredMatRef.current;
-          if (!statsMap.current.has(hitMesh)) statsMap.current.set(hitMesh, randomStats());
-          onHoverChange(statsMap.current.get(hitMesh)!);
+        if (hitGroup) {
+          if (hoveredMatRef.current) {
+            (groupMeshes.current.get(hitGroup) ?? [])
+              .forEach((m) => { m.material = hoveredMatRef.current!; });
+          }
+          if (!statsMap.current.has(hitGroup)) statsMap.current.set(hitGroup, randomStats());
+          onHoverChange(statsMap.current.get(hitGroup)!);
         } else {
           onHoverChange(null);
         }
       }
     }
 
-    // Build set of currently-hovered meshes (whole group, or single mesh as fallback)
+    // Animate elevation — fast rise while hovered, slow ease-out on descent
     const liftLocal = 0.8 / scaleFactorRef.current;
-    const hoveredSet: Set<THREE.Mesh> = hoveredGroupRef.current
-      ? new Set(groupMeshes.current.get(hoveredGroupRef.current) ?? [])
-      : hoveredMeshRef.current
-        ? new Set([hoveredMeshRef.current])
-        : new Set<THREE.Mesh>();
-
-    const toAnimate = new Set([...displacedMeshes.current, ...hoveredSet]);
-
-    toAnimate.forEach((m) => {
-      const orig      = meshOriginalY.current.get(m) ?? 0;
-      const isHovered = hoveredSet.has(m);
+    allGroups.current.forEach((g) => {
+      const orig      = groupOriginalY.current.get(g) ?? 0;
+      const isHovered = g === hoveredGroupRef.current;
       const target    = isHovered ? orig + liftLocal : orig;
       const lerp      = isHovered ? 0.08 : 0.03;
-      m.position.y   += (target - m.position.y) * lerp;
-      const displaced  = Math.abs(m.position.y - orig) > 0.0005;
-      if (displaced) displacedMeshes.current.add(m);
-      else           displacedMeshes.current.delete(m);
+      g.position.y   += (target - g.position.y) * lerp;
     });
   });
 
@@ -458,56 +442,21 @@ function AnnotationOverlay({
   );
 }
 
-// ─── Mobile static fallback (no WebGL) ───────────────────────────────────────
-function MobileHeroBackground() {
-  return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
-      {/* Subtle radial gradient atmosphere */}
-      <div style={{
-        position: "absolute", inset: 0,
-        background: [
-          "radial-gradient(ellipse 80% 60% at 50% 80%, rgba(255,60,0,0.07) 0%, transparent 65%)",
-          "radial-gradient(ellipse 60% 40% at 75% 25%, rgba(80,90,180,0.05) 0%, transparent 55%)",
-        ].join(", "),
-      }} />
-      {/* Fine grid texture */}
-      <div style={{
-        position: "absolute", inset: 0,
-        backgroundImage: [
-          "linear-gradient(rgba(224,224,224,0.04) 1px, transparent 1px)",
-          "linear-gradient(90deg, rgba(224,224,224,0.04) 1px, transparent 1px)",
-        ].join(", "),
-        backgroundSize: "48px 48px",
-      }} />
-      {/* Corner accent lines */}
-      <div style={{
-        position: "absolute", bottom: "15%", left: "8%",
-        width: "clamp(60px,15vw,120px)", height: "1px",
-        background: "linear-gradient(to right, rgba(255,60,0,0.4), transparent)",
-      }} />
-      <div style={{
-        position: "absolute", bottom: "15%", right: "8%",
-        width: "clamp(60px,15vw,120px)", height: "1px",
-        background: "linear-gradient(to left, rgba(255,60,0,0.4), transparent)",
-      }} />
-    </div>
-  );
-}
-
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Hero3DScene() {
-  const isMobile = useIsMobile();
+  // Plain mutable object — shared between Canvas (GLBModel) and RAF loop
+  const shared = useRef<HoverShared>({ group: null, camera: null, mouseNormX: 0 });
 
-  // ALL hooks must be called unconditionally — Rules of Hooks
-  const shared     = useRef<HoverShared>({ group: null, camera: null, mouseNormX: 0 });
+  // React state — controls annotation visibility + content (updated on hover change)
   const [hoverStats, setHoverStats] = useState<BuildingStats | null>(null);
-  const lineRef    = useRef<SVGLineElement   | null>(null);
-  const dotRef     = useRef<SVGCircleElement | null>(null);
-  const panelRef   = useRef<HTMLDivElement   | null>(null);
 
-  // RAF annotation loop — only runs on desktop (isMobile guard inside)
+  // DOM refs for RAF position updates — typed as plain objects to avoid RefObject quirks
+  const lineRef  = useRef<SVGLineElement   | null>(null);
+  const dotRef   = useRef<SVGCircleElement | null>(null);
+  const panelRef = useRef<HTMLDivElement   | null>(null);
+
+  // ── RAF loop: update line/dot/panel POSITION only (visibility via React state)
   useEffect(() => {
-    if (isMobile) return; // skip on mobile — no Canvas, no annotation
     let rafId: number;
 
     const tick = () => {
@@ -517,6 +466,7 @@ export default function Hero3DScene() {
       const panel = panelRef.current;
 
       if (group && camera && line && dot && panel) {
+        // World-space top-center of the elevated building group
         _box.setFromObject(group);
         _topPos.set(
           (_box.min.x + _box.max.x) / 2,
@@ -530,13 +480,16 @@ export default function Hero3DScene() {
         const sx = ((_topPos.x + 1) / 2) * W;
         const sy = ((-_topPos.y + 1) / 2) * H;
 
+        // Panel side follows mouse X — left half → left, right half → right
         const isRight = mouseNormX >= 0;
         const panelX  = isRight ? W - PANEL_MARGIN - PANEL_W : PANEL_MARGIN;
         const panelY  = Math.max(80, Math.min(H - 170, sy - 60));
 
+        // Update panel position
         panel.style.left = `${panelX}px`;
         panel.style.top  = `${panelY}px`;
 
+        // Update connecting line
         const lineEndX = isRight ? panelX : panelX + PANEL_W;
         const lineEndY = panelY + 60;
         line.setAttribute("x1", String(sx));
@@ -544,6 +497,7 @@ export default function Hero3DScene() {
         line.setAttribute("x2", String(lineEndX));
         line.setAttribute("y2", String(lineEndY));
 
+        // Update dot at building top
         dot.setAttribute("cx", String(sx));
         dot.setAttribute("cy", String(sy));
       }
@@ -553,22 +507,13 @@ export default function Hero3DScene() {
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [isMobile]);
+  }, []);
 
-  // ── Mobile: return static background AFTER all hooks ──────────────────────
-  if (isMobile) return <MobileHeroBackground />;
-
-  // ── Desktop: full 3D Canvas ────────────────────────────────────────────────
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
       <Canvas
         camera={{ position: [0, 8, 10], fov: 50 }}
-        gl={{
-          antialias: false,          // saves ~30% GPU; imperceptible at this scale
-          alpha: true,
-          powerPreference: "high-performance",
-        }}
-        dpr={[1, 1.5]}               // cap at 1.5× DPR — prevents 4× on Retina
+        gl={{ antialias: true, alpha: true }}
         style={{ background: "transparent" }}
       >
         <ambientLight intensity={0.5} color="#ffffff" />
@@ -604,11 +549,4 @@ export default function Hero3DScene() {
   );
 }
 
-// Preload only on non-touch desktop. We check both pointer and hover capability.
-if (
-  MODEL_PATH &&
-  typeof window !== "undefined" &&
-  !window.matchMedia("(max-width: 767px)").matches
-) {
-  useGLTF.preload(MODEL_PATH);
-}
+if (MODEL_PATH) useGLTF.preload(MODEL_PATH);
