@@ -284,18 +284,24 @@ body {
   color: var(--silver);
 }
 
-/* ── Mobile nav — collapse text links, keep logo ─────────────────────────── */
+/* ── Mobile nav — collapse text links, keep icons only ───────────────────── */
 @media (max-width: 767px) {
   .nav-links {
     display: none !important;
   }
-  /* Show only the BOOK button as a compact icon-style link */
-  .nav-book {
-    display: inline-block !important;
-    font-size: 0.5rem !important;
-    padding: 0.45rem 0.9rem !important;
+  /* Hide logo name text on very small screens to avoid overflow */
+  .nav-logo-name {
+    display: none !important;
   }
 }
 @media (min-width: 768px) {
-  .nav-book { display: inline-block; }
+  .nav-logo-name { display: inline-block; }
+}
+
+/* ── Mobile banner centering ─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .banner-wrapper-mobile {
+    width: 100% !important;
+    align-self: stretch !important;
+  }
 }

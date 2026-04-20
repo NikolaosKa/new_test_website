@@ -15,13 +15,9 @@ const C4 = "/projects/Project_04/png/OH_Page_01"
 
 const images = [
   { url: `${C1}/06_Cover_Images/Cover%20Page.png`, alt: "Next Station", name: "NEXT STATION", year: "2025", href: "/projects/next-station" },
-  { url: `${C2}/06_Cover_Images/P10.jpg`, alt: "White Leaf", name: "WHITE LEAF", year: "2020", href: "/projects/white-leaf" },
-  { url: `${C3}/Entrance.png`, alt: "Lithos", name: "LITHOS", year: "2021", href: "/projects/lithos" },
-  { url: `${C4}/Image.png`, alt: "OH", name: "OH", year: "2022", href: "/projects/oh" },
-  { url: `${P}/P15.jpg`, alt: "Study 05", name: "COMING SOON", year: "—", href: null },
-  { url: `${P}/P18.jpg`, alt: "Study 06", name: "COMING SOON", year: "—", href: null },
-  { url: `${P}/P21.jpg`, alt: "Study 07", name: "COMING SOON", year: "—", href: null },
-  { url: `${P}/P24.jpg`, alt: "Study 08", name: "COMING SOON", year: "—", href: null },
+  { url: `${C2}/06_Cover_Images/P10.jpg`,          alt: "White Leaf",   name: "WHITE LEAF",   year: "2020", href: "/projects/white-leaf"   },
+  { url: `${C3}/Entrance.png`,                     alt: "Lithos",       name: "LITHOS",       year: "2021", href: "/projects/lithos"       },
+  { url: `${C4}/Image.png`,                        alt: "OH",           name: "OH",           year: "2022", href: "/projects/oh"           },
 ]
 
 const details = [
@@ -31,16 +27,12 @@ const details = [
   { label: "STATUS",   value: "ONGOING" },
 ]
 
-// ── Layout — positions keep images away from centre title zone ────────────────
+// ── Layout — 4 projects, spread across viewport quadrants ─────────────────────
 const layout = [
-  { img: 0, depth: 1.2, top: "3%",  left: "18%", w: "clamp(130px,13vw,210px)", h: "clamp(130px,13vw,210px)" },
-  { img: 1, depth: 2.0, top: "1%",  left: "50%", w: "clamp(115px,11vw,180px)", h: "clamp(145px,15vw,230px)" },
-  { img: 2, depth: 0.8, top: "4%",  left: "72%", w: "clamp(145px,14vw,220px)", h: "clamp(100px,10vw,160px)" },
-  { img: 3, depth: 1.5, top: "34%", left: "2%",  w: "clamp(130px,13vw,205px)", h: "clamp(175px,18vw,285px)" },
-  { img: 4, depth: 0.6, top: "32%", left: "82%", w: "clamp(135px,13vw,210px)", h: "clamp(175px,18vw,280px)" },
-  { img: 5, depth: 2.5, top: "72%", left: "16%", w: "clamp(145px,14vw,225px)", h: "clamp(100px,10vw,165px)" },
-  { img: 6, depth: 1.0, top: "70%", left: "50%", w: "clamp(120px,12vw,190px)", h: "clamp(120px,12vw,190px)" },
-  { img: 7, depth: 1.8, top: "68%", left: "75%", w: "clamp(130px,13vw,205px)", h: "clamp(160px,16vw,255px)" },
+  { img: 0, depth: 1.2, top: "6%",  left: "8%",  w: "clamp(150px,15vw,240px)", h: "clamp(150px,15vw,240px)" },
+  { img: 1, depth: 2.0, top: "4%",  left: "56%", w: "clamp(130px,13vw,210px)", h: "clamp(165px,17vw,268px)" },
+  { img: 2, depth: 0.8, top: "52%", left: "4%",  w: "clamp(155px,15vw,245px)", h: "clamp(110px,11vw,178px)" },
+  { img: 3, depth: 1.5, top: "48%", left: "72%", w: "clamp(145px,14vw,230px)", h: "clamp(190px,19vw,305px)" },
 ]
 
 // Slight nudge toward viewport centre on hover

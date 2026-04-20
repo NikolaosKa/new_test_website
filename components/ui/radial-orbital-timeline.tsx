@@ -18,6 +18,7 @@ interface TimelineItem {
 
 interface RadialOrbitalTimelineProps {
   timelineData: TimelineItem[];
+  disableInteraction?: boolean;
 }
 
 export const skillsTimelineData: TimelineItem[] = [
@@ -35,7 +36,7 @@ export const skillsTimelineData: TimelineItem[] = [
   { id: 12, title: "MODEL MAKING",      date: "ONGOING", content: "Physical architectural model construction using laser cutting, CNC routing, and traditional hand-crafted techniques.", category: "FABRICATION",icon: Wrench,    relatedIds: [11, 1], status: "completed",   energy: 88 },
 ];
 
-export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTimelineProps) {
+export default function RadialOrbitalTimeline({ timelineData, disableInteraction = false }: RadialOrbitalTimelineProps) {
   const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({});
   const [rotationAngle, setRotationAngle] = useState<number>(0);
   const [autoRotate, setAutoRotate] = useState<boolean>(true);
@@ -226,8 +227,8 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
                 transition: "opacity 0.3s, z-index 0s",
                 cursor: "pointer",
               }}
-              onMouseEnter={() => handleNodeEnter(item.id)}
-              onMouseLeave={handleNodeLeave}
+              onMouseEnter={disableInteraction ? undefined : () => handleNodeEnter(item.id)}
+              onMouseLeave={disableInteraction ? undefined : handleNodeLeave}
             >
               {/* Glow aura */}
               <div style={{

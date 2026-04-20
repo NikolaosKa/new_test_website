@@ -128,7 +128,7 @@ export const HalideTopoHero = () => {
         <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.75rem" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Nikolaos Kalaitzidis logo" style={{ height: "clamp(44px, 5vw, 64px)", width: "auto", filter: "invert(1) brightness(2)", mixBlendMode: "screen" }} />
-          <span style={{ fontFamily: "Syncopate, sans-serif", fontWeight: 700, fontSize: "clamp(0.5rem, 0.9vw, 0.72rem)", letterSpacing: "0.08em", color: "var(--silver)", whiteSpace: "nowrap" }}>
+          <span className="nav-logo-name" style={{ fontFamily: "Syncopate, sans-serif", fontWeight: 700, fontSize: "clamp(0.5rem, 0.9vw, 0.72rem)", letterSpacing: "0.08em", color: "var(--silver)", whiteSpace: "nowrap" }}>
             NIKOLAOS KALAITZIDIS
           </span>
         </a>
@@ -353,12 +353,12 @@ export const HalideTopoHero = () => {
         {/* Scroll indicator */}
         <div className="scroll-hint" />
 
-        {/* Gradient fade into projects section below — eliminates harsh divider */}
+        {/* Gradient fade into projects section below */}
         <div style={{
           position: "absolute",
           bottom: 0, left: 0, right: 0,
-          height: "14rem",
-          background: "linear-gradient(to bottom, transparent 0%, rgba(8,8,8,0.7) 60%, #080808 100%)",
+          height: "8rem",
+          background: "linear-gradient(to bottom, transparent 0%, rgba(8,8,8,0.6) 55%, #080808 100%)",
           zIndex: 8,
           pointerEvents: "none",
         }} />

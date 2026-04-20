@@ -55,6 +55,17 @@ function isRoadNode(mesh: THREE.Mesh, sceneRoot: THREE.Object3D): boolean {
   return false;
 }
 
+// Walk up the scene graph to find a Block_XX group root; returns the group name or null
+function findBlockGroupName(mesh: THREE.Mesh, sceneRoot: THREE.Object3D): string | null {
+  let obj: THREE.Object3D = mesh;
+  while (obj && obj !== sceneRoot) {
+    if (obj.name && /^Block/i.test(obj.name)) return obj.name;
+    if (!obj.parent) break;
+    obj = obj.parent;
+  }
+  return null;
+}
+
 // ─── GLB Model ────────────────────────────────────────────────────────────────
 function GLBModel({
   path,
@@ -72,10 +83,15 @@ function GLBModel({
   const raycaster      = useRef(new THREE.Raycaster());
   const frameCount     = useRef(0);
 
-  const buildingMeshes = useRef<THREE.Mesh[]>([]);
-  const meshOriginalY  = useRef(new Map<THREE.Mesh, number>());
+  const buildingMeshes  = useRef<THREE.Mesh[]>([]);
+  const meshOriginalY   = useRef(new Map<THREE.Mesh, number>());
   const displacedMeshes = useRef(new Set<THREE.Mesh>());
-  const statsMap       = useRef(new Map<THREE.Mesh, BuildingStats>());
+  const statsMap        = useRef(new Map<THREE.Mesh, BuildingStats>());
+
+  // Group-level hover tracking
+  const meshToGroupName = useRef(new Map<THREE.Mesh, string>());
+  const groupMeshes     = useRef(new Map<string, THREE.Mesh[]>());
+  const hoveredGroupRef = useRef<string | null>(null);
 
   const hoveredMeshRef = useRef<THREE.Mesh | null>(null);
   const defaultMatRef  = useRef<THREE.MeshStandardMaterial | null>(null);
@@ -160,7 +176,19 @@ function GLBModel({
     });
 
     buildingMeshes.current = buildings;
-    console.log("[Hero3D] building meshes:", buildings.length, "| scale:", +(10 / maxDim).toFixed(2));
+
+    // Build group lookup maps
+    meshToGroupName.current.clear();
+    groupMeshes.current.clear();
+    buildings.forEach(mesh => {
+      const gName = findBlockGroupName(mesh, scene);
+      if (gName) {
+        meshToGroupName.current.set(mesh, gName);
+        if (!groupMeshes.current.has(gName)) groupMeshes.current.set(gName, []);
+        groupMeshes.current.get(gName)!.push(mesh);
+      }
+    });
+    console.log("[Hero3D] building meshes:", buildings.length, "| groups:", groupMeshes.current.size, "| scale:", +(10 / maxDim).toFixed(2));
   }, [scene]);
 
   // ── Mouse tracking ─────────────────────────────────────────────────────────
@@ -188,15 +216,29 @@ function GLBModel({
       const hits    = raycaster.current.intersectObjects(meshes, false);
       const hitMesh = (hits[0]?.object as THREE.Mesh) ?? null;
 
-      if (hitMesh !== hoveredMeshRef.current) {
-        // Restore previous mesh material
-        if (hoveredMeshRef.current && defaultMatRef.current) {
+      const hitGroupName = hitMesh ? (meshToGroupName.current.get(hitMesh) ?? null) : null;
+      const groupChanged = hitGroupName !== hoveredGroupRef.current;
+      const soloChanged  = !hitGroupName && !hoveredGroupRef.current && hitMesh !== hoveredMeshRef.current;
+
+      if (groupChanged || soloChanged) {
+        // Restore previous hovered state
+        if (hoveredGroupRef.current) {
+          const prev = groupMeshes.current.get(hoveredGroupRef.current) ?? [];
+          prev.forEach(m => { if (defaultMatRef.current) m.material = defaultMatRef.current; });
+        } else if (hoveredMeshRef.current && defaultMatRef.current) {
           hoveredMeshRef.current.material = defaultMatRef.current;
         }
-        hoveredMeshRef.current  = hitMesh;
-        shared.current.group    = hitMesh; // annotation uses this
 
-        if (hitMesh) {
+        hoveredGroupRef.current = hitGroupName;
+        hoveredMeshRef.current  = hitMesh;
+        shared.current.group    = hitMesh;
+
+        if (hitGroupName) {
+          const grpMeshes = groupMeshes.current.get(hitGroupName) ?? [];
+          grpMeshes.forEach(m => { if (hoveredMatRef.current) m.material = hoveredMatRef.current; });
+          if (hitMesh && !statsMap.current.has(hitMesh)) statsMap.current.set(hitMesh, randomStats());
+          onHoverChange(hitMesh ? (statsMap.current.get(hitMesh) ?? null) : null);
+        } else if (hitMesh) {
           if (hoveredMatRef.current) hitMesh.material = hoveredMatRef.current;
           if (!statsMap.current.has(hitMesh)) statsMap.current.set(hitMesh, randomStats());
           onHoverChange(statsMap.current.get(hitMesh)!);
@@ -206,14 +248,19 @@ function GLBModel({
       }
     }
 
-    // Only animate displaced meshes + the currently hovered one (avoids N-mesh loop)
+    // Build set of currently-hovered meshes (whole group, or single mesh as fallback)
     const liftLocal = 0.8 / scaleFactorRef.current;
-    const toAnimate = new Set(displacedMeshes.current);
-    if (hoveredMeshRef.current) toAnimate.add(hoveredMeshRef.current);
+    const hoveredSet: Set<THREE.Mesh> = hoveredGroupRef.current
+      ? new Set(groupMeshes.current.get(hoveredGroupRef.current) ?? [])
+      : hoveredMeshRef.current
+        ? new Set([hoveredMeshRef.current])
+        : new Set<THREE.Mesh>();
+
+    const toAnimate = new Set([...displacedMeshes.current, ...hoveredSet]);
 
     toAnimate.forEach((m) => {
       const orig      = meshOriginalY.current.get(m) ?? 0;
-      const isHovered = m === hoveredMeshRef.current;
+      const isHovered = hoveredSet.has(m);
       const target    = isHovered ? orig + liftLocal : orig;
       const lerp      = isHovered ? 0.08 : 0.03;
       m.position.y   += (target - m.position.y) * lerp;

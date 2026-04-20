@@ -67,7 +67,7 @@ const categories: Category[] = [
     tag: "PARAMETRIC / FABRICATION",
     graphic: "/comp.jpg",
     graphicFilter: "brightness(0.7) contrast(1.2) saturate(1.1)",
-    graphicHref: null,
+    graphicHref: "/computational-design",
     banners: [
       {
         title: "PARAMETRIC FACADE",
@@ -98,7 +98,7 @@ const categories: Category[] = [
     tag: "PROTOTYPING / INSTALLATION",
     graphic: "/digital.jpg",
     graphicFilter: "brightness(0.68) contrast(1.15) saturate(0.95)",
-    graphicHref: null,
+    graphicHref: "/digital-to-physical",
     banners: [
       {
         title: "PROTOTYPE 01",
@@ -290,6 +290,7 @@ function BannerCard({ banner, index }: { banner: Banner; index: number }) {
   return banner.href ? (
     <Link
       href={banner.href}
+      className={isMobile ? "banner-wrapper-mobile" : undefined}
       style={{ textDecoration: "none", display: "flex", flexDirection: "column", flex: isMobile ? "none" : 1 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -297,7 +298,7 @@ function BannerCard({ banner, index }: { banner: Banner; index: number }) {
       {inner}
     </Link>
   ) : (
-    <div style={{ display: "flex", flexDirection: "column", flex: isMobile ? "none" : 1 }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+    <div className={isMobile ? "banner-wrapper-mobile" : undefined} style={{ display: "flex", flexDirection: "column", flex: isMobile ? "none" : 1 }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       {inner}
     </div>
   )
@@ -383,18 +384,38 @@ function CategoryRow({ cat }: { cat: Category }) {
         </div>
 
         {/* Title */}
-        <h3 style={{
-          fontFamily: "Syncopate, sans-serif",
-          fontWeight: 700,
-          fontSize: "clamp(1.0rem, 1.8vw, 1.7rem)",
-          lineHeight: 1.0,
-          letterSpacing: "-0.02em",
-          color: "var(--silver)",
-          whiteSpace: "pre-line",
-          marginBottom: "0.7rem",
-        }}>
-          {cat.title}
-        </h3>
+        {cat.graphicHref ? (
+          <Link href={cat.graphicHref} style={{ textDecoration: "none" }}>
+            <h3 style={{
+              fontFamily: "Syncopate, sans-serif",
+              fontWeight: 700,
+              fontSize: "clamp(1.0rem, 1.8vw, 1.7rem)",
+              lineHeight: 1.0,
+              letterSpacing: "-0.02em",
+              color: "var(--silver)",
+              whiteSpace: "pre-line",
+              marginBottom: "0.7rem",
+              transition: "color 0.2s",
+            }}
+              onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")}
+              onMouseLeave={e => (e.currentTarget.style.color = "var(--silver)")}>
+              {cat.title}
+            </h3>
+          </Link>
+        ) : (
+          <h3 style={{
+            fontFamily: "Syncopate, sans-serif",
+            fontWeight: 700,
+            fontSize: "clamp(1.0rem, 1.8vw, 1.7rem)",
+            lineHeight: 1.0,
+            letterSpacing: "-0.02em",
+            color: "var(--silver)",
+            whiteSpace: "pre-line",
+            marginBottom: "0.7rem",
+          }}>
+            {cat.title}
+          </h3>
+        )}
 
         {/* Tag */}
         <p style={{
@@ -434,7 +455,12 @@ export function ProjectsSection() {
       <section
         id="projects"
         className="projects-section"
-        style={{ padding: "clamp(4rem, 8vw, 8rem) clamp(1.5rem, 6vw, 6rem)" }}
+        style={{
+          paddingTop: "clamp(1.5rem, 2.5vw, 2.5rem)",
+          paddingBottom: "clamp(4rem, 8vw, 8rem)",
+          paddingLeft: "clamp(1.5rem, 6vw, 6rem)",
+          paddingRight: "clamp(1.5rem, 6vw, 6rem)",
+        }}
       >
         {/* Header */}
         <motion.div
