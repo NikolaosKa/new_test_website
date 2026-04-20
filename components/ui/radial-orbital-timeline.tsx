@@ -79,7 +79,7 @@ export default function RadialOrbitalTimeline({
   const nodePos = (index: number) => {
     const angle = ((index / timelineData.length) * 360 + rotationAngle) % 360;
     const rad = (angle * Math.PI) / 180;
-    const radius = 245;
+    const radius = 310;
     return {
       x: radius * Math.cos(rad),
       y: radius * Math.sin(rad),
@@ -109,24 +109,25 @@ export default function RadialOrbitalTimeline({
       }}
     >
       {/* ── Orbit rings ─────────────────────────────────────────────── */}
+      {/* Main ring — sits at exactly the node centres (radius × 2) */}
       <div style={{
         position: "absolute",
-        width: "522px",
-        height: "522px",
+        width: "620px",
+        height: "620px",
         borderRadius: "50%",
-        border: "1.5px solid rgba(255,255,255,0.13)",
+        border: "1.5px solid rgba(255,255,255,0.18)",
         left: "50%",
         top: "50%",
         transform: "translate(-50%,-50%)",
         pointerEvents: "none",
       }} />
-      {/* Outer faint ring for depth */}
+      {/* Outer depth ring */}
       <div style={{
         position: "absolute",
-        width: "560px",
-        height: "560px",
+        width: "670px",
+        height: "670px",
         borderRadius: "50%",
-        border: "1px solid rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.05)",
         left: "50%",
         top: "50%",
         transform: "translate(-50%,-50%)",
@@ -135,10 +136,10 @@ export default function RadialOrbitalTimeline({
       {/* Inner accent ring */}
       <div style={{
         position: "absolute",
-        width: "484px",
-        height: "484px",
+        width: "572px",
+        height: "572px",
         borderRadius: "50%",
-        border: "1px solid rgba(255,60,0,0.07)",
+        border: "1px solid rgba(255,60,0,0.09)",
         left: "50%",
         top: "50%",
         transform: "translate(-50%,-50%)",
@@ -148,8 +149,8 @@ export default function RadialOrbitalTimeline({
       {/* ── Centre orb ──────────────────────────────────────────────── */}
       <div style={{
         position: "absolute",
-        width: "52px",
-        height: "52px",
+        width: "72px",
+        height: "72px",
         borderRadius: "50%",
         background: "radial-gradient(circle, rgba(255,60,0,0.75) 0%, rgba(255,60,0,0.12) 60%, transparent 100%)",
         left: "50%",
@@ -161,11 +162,11 @@ export default function RadialOrbitalTimeline({
         justifyContent: "center",
       }}>
         <div style={{
-          width: "22px",
-          height: "22px",
+          width: "30px",
+          height: "30px",
           borderRadius: "50%",
           background: "rgba(255,60,0,0.9)",
-          boxShadow: "0 0 18px rgba(255,60,0,0.65)",
+          boxShadow: "0 0 24px rgba(255,60,0,0.7)",
         }} />
       </div>
 
@@ -197,8 +198,8 @@ export default function RadialOrbitalTimeline({
             {pulsing && (
               <div style={{
                 position: "absolute",
-                width: "60px",
-                height: "60px",
+                width: "110px",
+                height: "110px",
                 borderRadius: "50%",
                 background: "radial-gradient(circle, rgba(255,60,0,0.18) 0%, transparent 70%)",
                 left: "50%",
@@ -211,31 +212,31 @@ export default function RadialOrbitalTimeline({
 
             {/* Node circle */}
             <div style={{
-              width: "40px",
-              height: "40px",
+              width: "76px",
+              height: "76px",
               borderRadius: "50%",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: expanded ? "rgba(255,60,0,0.85)" : related ? "rgba(255,60,0,0.22)" : "rgba(10,10,10,0.95)",
-              border: `2px solid ${expanded ? "rgba(255,60,0,1)" : related ? "rgba(255,60,0,0.65)" : "rgba(255,255,255,0.18)"}`,
-              boxShadow: expanded ? "0 0 22px rgba(255,60,0,0.5)" : related ? "0 0 10px rgba(255,60,0,0.28)" : "none",
-              transform: expanded ? "scale(1.5)" : "scale(1)",
+              background: expanded ? "rgba(255,60,0,0.85)" : related ? "rgba(255,60,0,0.18)" : "rgba(10,10,10,0.96)",
+              border: `4px solid ${expanded ? "rgba(255,60,0,1)" : related ? "rgba(255,60,0,0.65)" : "rgba(255,255,255,0.22)"}`,
+              boxShadow: expanded ? "0 0 32px rgba(255,60,0,0.55)" : related ? "0 0 16px rgba(255,60,0,0.32)" : "none",
+              transform: expanded ? "scale(1.25)" : "scale(1)",
               transition: "transform 0.3s ease, background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease",
               color: expanded ? "#fff" : "rgba(224,224,224,0.65)",
               flexShrink: 0,
             }}>
-              <Icon size={14} />
+              <Icon size={22} />
             </div>
 
             {/* Label */}
             <div style={{
               position: "absolute",
-              top: "46px",
+              top: "84px",
               left: "50%",
               transform: "translateX(-50%)",
               fontFamily: "'Share Tech Mono', monospace",
-              fontSize: "0.38rem",
+              fontSize: "0.44rem",
               letterSpacing: "0.14em",
               color: expanded ? "rgba(255,60,0,0.9)" : "rgba(224,224,224,0.42)",
               whiteSpace: "nowrap",
@@ -251,7 +252,7 @@ export default function RadialOrbitalTimeline({
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   position: "absolute",
-                  top: "64px",
+                  top: "90px",
                   left: "50%",
                   transform: "translateX(-50%)",
                   width: "260px",

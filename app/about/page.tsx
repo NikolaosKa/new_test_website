@@ -670,7 +670,7 @@ export default function AboutPage() {
               CLICK A NODE TO EXPLORE
             </p>
           </div>
-          <RadialOrbitalTimeline timelineData={skillsTimelineData} containerHeight="780px" />
+          <RadialOrbitalTimeline timelineData={skillsTimelineData} containerHeight="880px" />
         </section>
 
         {/* ── Experience ──────────────────────────────────────────────────── */}
