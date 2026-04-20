@@ -5,11 +5,8 @@ import Link from "next/link";
 import { Menu, X, Search } from "lucide-react";
 import RadialOrbitalTimeline, { skillsTimelineData } from "@/components/ui/radial-orbital-timeline";
 
-// Hammer cursor SVG data URI — hotspot at (9, 7): top-left head (strike face)
-const _hammerSvg = encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect x="2" y="2" width="16" height="10" rx="2" fill="#e0e0e0"/><line x1="16" y1="10" x2="29" y2="29" stroke="#e0e0e0" stroke-width="3.5" stroke-linecap="round"/></svg>`
-);
-const HAMMER_CURSOR = `url("data:image/svg+xml,${_hammerSvg}") 9 7, crosshair`;
+// Hammer cursor — hotspot at (16, 16) centre of the icon
+const HAMMER_CURSOR = `url("/hammer-cursor.jpg") 16 16, crosshair`;
 
 const aboutProjectsData = [
   { title: "NEXT STATION",     href: "/projects/next-station",    cat: "SPATIAL SYSTEMS"    },
