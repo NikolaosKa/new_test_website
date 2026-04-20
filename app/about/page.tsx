@@ -5,8 +5,19 @@ import Link from "next/link";
 import { Menu, X, Search } from "lucide-react";
 import RadialOrbitalTimeline, { skillsTimelineData } from "@/components/ui/radial-orbital-timeline";
 
-// Hammer cursor — hotspot at (16, 16) centre of the icon
-const HAMMER_CURSOR = `url("/hammer-cursor.jpg") 16 16, crosshair`;
+// Hammer cursor — 40×40 SVG built from the lucide Hammer paths, white stroke.
+// Hotspot at (33,8): the flat striking face of the hammer head (top-right).
+const _hammerSvg = encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">` +
+  `<path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9" stroke="rgba(0,0,0,0.7)" stroke-width="3.5"/>` +
+  `<path d="m18 15 4-4" stroke="rgba(0,0,0,0.7)" stroke-width="3.5"/>` +
+  `<path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5" stroke="rgba(0,0,0,0.7)" stroke-width="3.5"/>` +
+  `<path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9" stroke="white" stroke-width="2"/>` +
+  `<path d="m18 15 4-4" stroke="white" stroke-width="2"/>` +
+  `<path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5" stroke="white" stroke-width="2"/>` +
+  `</svg>`
+);
+const HAMMER_CURSOR = `url("data:image/svg+xml,${_hammerSvg}") 33 8, crosshair`;
 
 const aboutProjectsData = [
   { title: "NEXT STATION",     href: "/projects/next-station",    cat: "SPATIAL SYSTEMS"    },
@@ -659,7 +670,7 @@ export default function AboutPage() {
               CLICK A NODE TO EXPLORE
             </p>
           </div>
-          <RadialOrbitalTimeline timelineData={skillsTimelineData} containerHeight="680px" />
+          <RadialOrbitalTimeline timelineData={skillsTimelineData} containerHeight="780px" />
         </section>
 
         {/* ── Experience ──────────────────────────────────────────────────── */}

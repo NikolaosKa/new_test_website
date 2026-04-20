@@ -79,7 +79,7 @@ export default function RadialOrbitalTimeline({
   const nodePos = (index: number) => {
     const angle = ((index / timelineData.length) * 360 + rotationAngle) % 360;
     const rad = (angle * Math.PI) / 180;
-    const radius = 200;
+    const radius = 245;
     return {
       x: radius * Math.cos(rad),
       y: radius * Math.sin(rad),
@@ -108,13 +108,37 @@ export default function RadialOrbitalTimeline({
         background: "transparent",
       }}
     >
-      {/* ── Orbit ring ──────────────────────────────────────────────── */}
+      {/* ── Orbit rings ─────────────────────────────────────────────── */}
       <div style={{
         position: "absolute",
-        width: "430px",
-        height: "430px",
+        width: "522px",
+        height: "522px",
         borderRadius: "50%",
-        border: "1px solid rgba(255,255,255,0.05)",
+        border: "1.5px solid rgba(255,255,255,0.13)",
+        left: "50%",
+        top: "50%",
+        transform: "translate(-50%,-50%)",
+        pointerEvents: "none",
+      }} />
+      {/* Outer faint ring for depth */}
+      <div style={{
+        position: "absolute",
+        width: "560px",
+        height: "560px",
+        borderRadius: "50%",
+        border: "1px solid rgba(255,255,255,0.04)",
+        left: "50%",
+        top: "50%",
+        transform: "translate(-50%,-50%)",
+        pointerEvents: "none",
+      }} />
+      {/* Inner accent ring */}
+      <div style={{
+        position: "absolute",
+        width: "484px",
+        height: "484px",
+        borderRadius: "50%",
+        border: "1px solid rgba(255,60,0,0.07)",
         left: "50%",
         top: "50%",
         transform: "translate(-50%,-50%)",
