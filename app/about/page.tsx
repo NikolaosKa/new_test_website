@@ -3,6 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Menu, X, Search } from "lucide-react";
+import RadialOrbitalTimeline, { skillsTimelineData } from "@/components/ui/radial-orbital-timeline";
+
+// Hammer cursor SVG data URI — hotspot at (9, 7): top-left head (strike face)
+const _hammerSvg = encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect x="2" y="2" width="16" height="10" rx="2" fill="#e0e0e0"/><line x1="16" y1="10" x2="29" y2="29" stroke="#e0e0e0" stroke-width="3.5" stroke-linecap="round"/></svg>`
+);
+const HAMMER_CURSOR = `url("data:image/svg+xml,${_hammerSvg}") 9 7, crosshair`;
 
 const aboutProjectsData = [
   { title: "NEXT STATION",     href: "/projects/next-station",    cat: "SPATIAL SYSTEMS"    },
@@ -197,12 +204,13 @@ function PieceContent({ id }: { id: string }) {
 
 // ── AnimatedLogo ──────────────────────────────────────────────────────────────
 function AnimatedLogo({
-  trigger, logoState, onDoubleClick, onPileClick,
+  trigger, logoState, onDoubleClick, onPileClick, hammerActive,
 }: {
   trigger: boolean;
   logoState: LogoState;
   onDoubleClick: () => void;
   onPileClick: () => void;
+  hammerActive?: boolean;
 }) {
   const showPieces = logoState !== "idle";
   const logoW = "clamp(100px,16vw,220px)";
@@ -217,7 +225,10 @@ function AnimatedLogo({
 
   return (
     // Outer wrapper — position:relative so we can absolutely-place the hint inside it
-    <div style={{ position: "relative", display: "inline-block" }}>
+    <div style={{
+      position: "relative", display: "inline-block",
+      animation: hammerActive ? "hammerStrike 0.36s cubic-bezier(0.16,1,0.3,1)" : "none",
+    }}>
       <style>{PIECE_KEYFRAMES}</style>
 
       {/* ── Idle logo (draw animation) ─────────────────────────────────────── */}
@@ -226,7 +237,7 @@ function AnimatedLogo({
           onDoubleClick={onDoubleClick}
           title="Double-click to break"
           style={{
-            cursor: "crosshair",
+            cursor: HAMMER_CURSOR,
             animation: trigger ? "alBreathe 4s ease-in-out 2s infinite" : "none",
           }}
         >
@@ -355,11 +366,9 @@ const droneImages = [
 ];
 
 export default function AboutPage() {
-  const skillsRef = useRef<HTMLDivElement>(null);
-  const [skillsReady, setSkillsReady] = useState(false);
-  const [skillsFill,  setSkillsFill]  = useState(false);
   const [mounted,     setMounted]     = useState(false);
   const [logoState,   setLogoState]   = useState<LogoState>("idle");
+  const [hammerActive, setHammerActive] = useState(false);
   const logoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Nav overlay state
@@ -390,27 +399,15 @@ export default function AboutPage() {
 
   useEffect(() => {
     setMounted(true);
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && entry.boundingClientRect.top > 0) {
-          obs.disconnect();
-          setSkillsReady(true);
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => setSkillsFill(true));
-          });
-        }
-      },
-      { threshold: 0.2, rootMargin: "0px 0px -60px 0px" }
-    );
-    if (skillsRef.current) obs.observe(skillsRef.current);
     return () => {
-      obs.disconnect();
       if (logoTimerRef.current) clearTimeout(logoTimerRef.current);
     };
   }, []);
 
   const handleLogoBreak = () => {
     if (logoState !== "idle") return;
+    setHammerActive(true);
+    setTimeout(() => setHammerActive(false), 380);
     setLogoState("breaking");
     // Last piece (lp5) lands at 3.00 + 0.20 = 3.20 s → broken at 3.4 s
     logoTimerRef.current = setTimeout(() => setLogoState("broken"), 3400);
@@ -429,6 +426,13 @@ export default function AboutPage() {
         .about-page { opacity:0; transition: opacity 0.7s ease; }
         .about-page.ready { opacity:1; }
         @keyframes alFadeIn { from { opacity:0; } to { opacity:1; } }
+        @keyframes hammerStrike {
+          0%   { transform: scale(1)    rotate(0deg)  translate(0,0); }
+          22%  { transform: scale(0.94) rotate(-4deg) translate(-3px,-2px); }
+          55%  { transform: scale(1.03) rotate(2deg)  translate(1px, 1px); }
+          80%  { transform: scale(0.99) rotate(-1deg) translate(0,0); }
+          100% { transform: scale(1)    rotate(0deg)  translate(0,0); }
+        }
         @keyframes flow {
           0%,100% { transform:scaleY(0); transform-origin:top; }
           50%     { transform:scaleY(1); transform-origin:top; }
@@ -445,11 +449,6 @@ export default function AboutPage() {
         .exp-grid      { display:grid; grid-template-columns:1fr 1fr; gap:2px; }
         .pursuits-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
         .ig-grid       { display:grid; grid-template-columns:repeat(6,1fr); gap:4px; }
-        .skill-bar-fill {
-          position:absolute; inset:0;
-          background:linear-gradient(to right, var(--accent), rgba(255,60,0,0.38));
-          transform-origin:left center; will-change:transform;
-        }
         @media (max-width:900px) {
           .bio-grid { grid-template-columns:1fr !important; gap:3rem !important; }
           .exp-grid  { grid-template-columns:1fr !important; }
@@ -593,6 +592,7 @@ export default function AboutPage() {
             logoState={logoState}
             onDoubleClick={handleLogoBreak}
             onPileClick={handleLogoAssemble}
+            hammerActive={hammerActive}
           />
 
           {/* Text pointer-events off when broken so pile clicks pass through */}
@@ -652,27 +652,17 @@ export default function AboutPage() {
         </section>
 
         {/* ── Skills ──────────────────────────────────────────────────────── */}
-        <section ref={skillsRef} style={{ padding:"clamp(4rem,8vw,8rem) clamp(1.5rem,6vw,6rem)", borderTop:"1px solid rgba(224,224,224,0.06)", maxWidth:"1400px", margin:"0 auto" }}>
-          <p style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.62rem", letterSpacing:"0.22em", color:"var(--accent)", marginBottom:"1.2rem" }}>002 / EXPERTISE</p>
-          <h2 style={{ fontFamily:"Syncopate,sans-serif", fontWeight:700, fontSize:"clamp(1.5rem,3vw,2.5rem)", letterSpacing:"-0.03em", marginBottom:"4rem", color:"var(--silver)", lineHeight:0.95 }}>
-            SKILLS &amp;<br />TOOLS
-          </h2>
-          <div style={{ display:"flex", flexDirection:"column", gap:"2.4rem" }}>
-            {skills.map(({ name, level }, i) => (
-              <div key={name}>
-                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"0.65rem" }}>
-                  <span style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.68rem", letterSpacing:"0.15em", color:"var(--silver)" }}>{name}</span>
-                  <span style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.62rem", letterSpacing:"0.1em", color:"rgba(224,224,224,0.3)" }}>{level}%</span>
-                </div>
-                <div style={{ height:"2px", background:"rgba(224,224,224,0.07)", position:"relative", overflow:"hidden" }}>
-                  <div className="skill-bar-fill" style={{
-                    transform: skillsFill ? `scaleX(${level/100})` : "scaleX(0)",
-                    transition: skillsReady ? `transform 1.5s cubic-bezier(0.16,1,0.3,1) ${i*0.1}s` : "none",
-                  }} />
-                </div>
-              </div>
-            ))}
+        <section style={{ borderTop:"1px solid rgba(224,224,224,0.06)" }}>
+          <div style={{ padding:"clamp(4rem,8vw,8rem) clamp(1.5rem,6vw,6rem) 0", maxWidth:"1400px", margin:"0 auto" }}>
+            <p style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.62rem", letterSpacing:"0.22em", color:"var(--accent)", marginBottom:"1.2rem" }}>002 / EXPERTISE</p>
+            <h2 style={{ fontFamily:"Syncopate,sans-serif", fontWeight:700, fontSize:"clamp(1.5rem,3vw,2.5rem)", letterSpacing:"-0.03em", marginBottom:"0.5rem", color:"var(--silver)", lineHeight:0.95 }}>
+              SKILLS &amp;<br />TOOLS
+            </h2>
+            <p style={{ fontFamily:"Share Tech Mono,monospace", fontSize:"0.56rem", letterSpacing:"0.16em", color:"rgba(224,224,224,0.28)", marginBottom:"0" }}>
+              CLICK A NODE TO EXPLORE
+            </p>
           </div>
+          <RadialOrbitalTimeline timelineData={skillsTimelineData} containerHeight="680px" />
         </section>
 
         {/* ── Experience ──────────────────────────────────────────────────── */}
